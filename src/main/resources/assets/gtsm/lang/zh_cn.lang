@@ -1,6 +1,8 @@
 # 储物桶管理器（GT6 Storage Manager）
 # 方块名：注册表名 gtsm.multitileentity + "." + MTE_ID(1)
 item.gtsm.multitileentity.1.name=储物桶管理器
+# MultiTileEntityBlock.internal.getLocalizedName() 查的就是注册表名本身，必须有这个裸 key
+gtsm.multitileentity=储物桶管理器
 gtsm.multitileentity.1=储物桶管理器
 # 创造模式物品栏（MTE_ID=0 的分类名）
 gtsm.multitileentity.0=储物桶管理器

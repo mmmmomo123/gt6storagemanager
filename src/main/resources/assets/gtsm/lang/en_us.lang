@@ -1,6 +1,7 @@
 # GT6 Storage Manager
 # 注：本整合包为中文包，en_us 也输出中文（默认语言不改变用户体验）
 item.gtsm.multitileentity.1.name=储物桶管理器
+gtsm.multitileentity=储物桶管理器
 gtsm.multitileentity.1=储物桶管理器
 gtsm.multitileentity.0=储物桶管理器
 gtsm.storage.manager=储物桶管理器

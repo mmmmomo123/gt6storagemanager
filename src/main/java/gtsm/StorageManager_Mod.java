@@ -163,5 +163,8 @@ public final class StorageManager_Mod extends Abstract_Mod {
                     'B', MT.DATA.CIRCUITS[tCircuitIDs[i]],
                     'D', tInserter);
         }
+        System.out.println("[GTSM] mTE " + MTE_ID + " registered in registry '" + REGISTRY_NAME
+                + "' on block '" + tBlock.getUnlocalizedName()
+                + "' | item=" + (tSelf == null ? "FAILED" : tSelf.getDisplayName()));
     }
 }
