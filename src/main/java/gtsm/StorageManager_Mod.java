@@ -43,7 +43,7 @@ public final class StorageManager_Mod extends Abstract_Mod {
     /** Mod-ID 必须全小写、无空格（vanilla 资源包限制） */
     public static final String MOD_ID = "gtsm";
     public static final String MOD_NAME = "GT6 Storage Manager";
-    public static final String VERSION = "1.0.3";
+    public static final String VERSION = "1.0.4";
 
     /** GT 的 ModData 对象 */
     public static final ModData MOD_DATA = new ModData(MOD_ID, MOD_NAME);
@@ -149,11 +149,10 @@ public final class StorageManager_Mod extends Abstract_Mod {
         // GT6 电路阶梯：[0]Primitive [1]Basic(基础) [2]Good(低级) [3]Advanced [4]Elite [5]Master [6]Ultimate(究极)
         // 需求：排除基础/低级，接受 t3+（高级/精英/大师/究极），共 4 种
         int[] tCircuitIDs = {3, 4, 5, 6};
-        // 关键：把 MTE 注册到【GT6 自己的机器方块】上（参数与 GT6 完全一致，getOrCreate 会返回既有块）。
-        // 不要用本 mod 自建的 getOrCreate 块——在世界创建本 mod 之前存在的旧存档里，
-        // 新块的 ID 不在世界 ID 映射表中，每次启动会被重新分配，导致放置的方块重进游戏变空气。
-        // GT6 的机器方块从世界创建起就在映射表里(ID 1100)，永久稳定。
-        MultiTileEntityBlock tStableBlock = MultiTileEntityBlock.getOrCreate("gregtech", "machine", MaterialMachines.instance, Block.soundTypeMetal, CS.TOOL_wrench, 0, 0, 15, F, F);
+        // 用自己的 MTE 方块：参数与 Example_Mod 一致（machine.stone.wrench.0.0.15.false.false）。
+        // 不要注册到 GT6 的机器块上——两者的 block metadata(我们传 0) 会撞车，
+        // GT6 自家机器也占 meta 0，重进游戏该位置被当成 GT6 机器 → 不渲染/不能交互。
+        MultiTileEntityBlock tStableBlock = MultiTileEntityBlock.getOrCreate(MOD_ID, "machine", MaterialMachines.instance, Block.soundTypeMetal, CS.TOOL_wrench, 0, 0, 15, F, F);
         ItemStack tSelf = tRegistry.add("储物桶管理器", "储物桶", MTE_ID, 0, TileEntityStorageManager.class, 0, 16, tStableBlock,
                 UT.NBT.make(CS.NBT_TEXTURE, TEXTURE_NAME, CS.NBT_HARDNESS, 6.0F, CS.NBT_RESISTANCE, 6.0F),
                 "PCP", "BDB", "PCP",

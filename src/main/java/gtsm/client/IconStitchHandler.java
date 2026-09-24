@@ -20,9 +20,8 @@ public final class IconStitchHandler {
     @SubscribeEvent
     public void onTextureStitchPre(TextureStitchEvent.Pre aEvent) {
         if (aEvent.map == null) return;
-        int tType = aEvent.map.getTextureType();
-        // 0 = 方块图集，1 = 物品图集；两个都注册无害（registerIcon 幂等）
-        if (tType == 0 || tType == 1) {
+        // 0 = 方块图集；我们的图标是方块贴图，只注册到方块图集
+        if (aEvent.map.getTextureType() == 0) {
             try {
                 gtsm.tile.TileEntityStorageManager.ICON_STORAGE_MANAGER.registerIcons(aEvent.map);
             } catch (Throwable t) {
