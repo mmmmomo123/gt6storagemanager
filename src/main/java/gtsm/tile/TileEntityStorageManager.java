@@ -109,6 +109,18 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
         return "gtsm.storage.manager"; // 不能以 "gt." 开头（GT6 保留）
     }
 
+    /** GT6 首次注册回调：除父类的 GameRegistry 注册外，显式再注册一次 + 打点（防 GT6 注册链被短路导致客户端 TE 不加载） */
+    @Override
+    public void onRegistrationFirst(gregapi.block.multitileentity.MultiTileEntityRegistry aRegistry, short aID) {
+        super.onRegistrationFirst(aRegistry, aID);
+        try {
+            cpw.mods.fml.common.registry.GameRegistry.registerTileEntity(TileEntityStorageManager.class, "gtsm.storage.manager");
+            System.out.println("[GTSM-DIAG] onRegistrationFirst: explicit registerTileEntity(gtsm.storage.manager) DONE aID=" + aID);
+        } catch (Throwable t) {
+            System.out.println("[GTSM-DIAG] onRegistrationFirst: register FAILED: " + t);
+        }
+    }
+
     /** 物品显示名直接由代码返回中文（不依赖 lang 加载，确保任何 locale 都显示中文） */
     @Override
     public String getItemName(ItemStack aStack, String aDefaultName) {
@@ -394,18 +406,30 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
             return;
         }
         ItemStack tCurrent = tBox.slot(1);
-        int tNow = ST.valid(tCurrent) ? tCurrent.stackSize : 0;
-        int tTarget = ST.valid(aStack) ? aStack.stackSize : 0;
-        if (tTarget == tNow) return;
-        if (tTarget < tNow) {
-            // 取出差值（GT6 官方 API；胶带锁定时返回 0，绝不复制物品）
-            tBox.removeStackFromConnectedInventory((byte) 0, ST.amount(tNow - tTarget, tCurrent), F);
-        } else {
-            // 放入差值：优先本槽对应的桶，放不下再路由，仍放不下降落
-            ItemStack tToAdd = ST.amount(tTarget - tNow, aStack);
-            ItemStack tLeftover = insertIntoBox(tBox, tToAdd);
-            if (tLeftover != null) dropLeftover(routeInsert(tLeftover));
+        // 关键：只有【同品种】才按“差值”语义解释（自动化靠写回剩余堆来扣除）；
+        // 不同品种/不同单位（小撮→粉碎矿石、粒→锭）时按裸数量算差值会完全错乱，
+        // 必须按“插入该物品(含 GT6 打包)”处理。
+        boolean tSame = ST.valid(tCurrent) && ST.valid(aStack) && ST.equal(tCurrent, aStack);
+        if (tSame) {
+            int tNow = tCurrent.stackSize;
+            int tTarget = aStack.stackSize;
+            if (tTarget == tNow) return;
+            if (tTarget < tNow) {
+                // 取出差值（GT6 官方 API；胶带锁定时返回 0，绝不复制物品）
+                tBox.removeStackFromConnectedInventory((byte) 0, ST.amount(tNow - tTarget, tCurrent), F);
+            } else {
+                // 放入差值
+                dropLeftover(routeInsert(insertIntoBox(tBox, ST.amount(tTarget - tNow, aStack))));
+            }
+            return;
         }
+        if (ST.invalid(aStack)) {
+            // 清空该桶
+            if (ST.valid(tCurrent)) tBox.removeStackFromConnectedInventory((byte) 0, ST.amount(tCurrent.stackSize, tCurrent), F);
+            return;
+        }
+        // 不同品种/单位：插入（GT6 自动打包成桶内品种），放不下再路由，仍放不下降落
+        dropLeftover(routeInsert(insertIntoBox(tBox, aStack)));
     }
 
     @Override
