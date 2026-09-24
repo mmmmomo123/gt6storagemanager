@@ -5,6 +5,7 @@ import appeng.util.inv.IInventoryWrapper;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_AddToolTips;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_GetBlockHardness;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_GetComparatorInputOverride;
+import gregapi.block.multitileentity.IMultiTileEntity.IMTE_OnRegistrationFirstClient;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_GetExplosionResistance;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_OnToolClick;
 import gregapi.code.ArrayListNoNulls;
@@ -55,7 +56,7 @@ import static gregapi.data.CS.*;
 public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
         implements IInventory, ISidedInventory, IMTE_OnToolClick, IMTE_AddToolTips,
                    IMTE_GetBlockHardness, IMTE_GetExplosionResistance, IMTE_GetComparatorInputOverride,
-                   IInventoryWrapper {
+                   IInventoryWrapper, IMTE_OnRegistrationFirstClient {
 
     /** 通用路由槽的下标 */
     public static final int SLOT_ROUTER = 0;
@@ -179,6 +180,21 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
     public int rangeMaxY() { return yCoord + (mRangeEnabled ? mOffsetY : 0) + effectiveRadius(); }
     public int rangeMaxZ() { return zCoord + (mRangeEnabled ? mOffsetZ : 0) + effectiveRadius(); }
     public int effectiveRadius() { return mRangeEnabled ? mRadius : Config.scanRadius; }
+
+    // ---- 客户端画框/TESR 只读访问器 ----
+    public int offsetX() { return mOffsetX; }
+    public int offsetY() { return mOffsetY; }
+    public int offsetZ() { return mOffsetZ; }
+    public int radius() { return mRadius; }
+    public boolean rangeEnabled() { return mRangeEnabled; }
+    public boolean showFrame() { return mShowFrame; }
+
+    /** TESR 注册：GT6 在客户端首次注册 MTE 时回调（仅客户端） */
+    @Override
+    @cpw.mods.fml.relauncher.SideOnly(cpw.mods.fml.relauncher.Side.CLIENT)
+    public void onRegistrationFirstClient(gregapi.block.multitileentity.MultiTileEntityRegistry aRegistry, short aID) {
+        cpw.mods.fml.client.registry.ClientRegistry.bindTileEntitySpecialRenderer(getClass(), gtsm.client.RangeFrameRenderer.INSTANCE);
+    }
 
     /** 立即把本管理器的范围数据同步给 64 格内的玩家（GUI/画框数据源） */
     public void broadcastRange() {
