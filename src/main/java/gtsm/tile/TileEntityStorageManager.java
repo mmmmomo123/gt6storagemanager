@@ -155,11 +155,11 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
         aNBT.setBoolean("gtsm.showFrame", mShowFrame);
     }
 
-    /** 无 GUI 数据包需求（范围数据走自定义 GTSM 网络包），直接返回 null */
-    @Override
-    public IPacket getClientDataPacket(boolean aSendAll) {
-        return null;
-    }
+    /**
+     * 注意：不要重写 getClientDataPacket —— GT6 用它向客户端同步 TE 身份
+     * （PacketSyncDataIDs：注册表 id + mTE id），客户端靠它创建自己的 TE。
+     * 返回 null 会导致“服务端有 TE、客户端没有”→ 方块不渲染、不能右键（但碰撞还在）。
+     */
 
     // --------------------------------------------------------------
     //  范围控制（GUI）
@@ -465,12 +465,11 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
     @Override
     public boolean isItemValidForSlot(int aSlot, ItemStack aStack) {
         if (ST.invalid(aStack)) return F;
-        if (aSlot == SLOT_ROUTER) return canRouteInsert(aStack); // 路由槽：仅当范围内确实有桶能收时才准入
-        MultiTileEntityMassStorage tBox = box(aSlot);
-        if (tBox == null) return F;
-        if (!tBox.slotHas(1)) return mFillEmptyBoxes; // 空桶按配置决定是否接受新品种
-        // GT6 自己的准入判断：同品种 YES；不同品种但可打包(小撮→粉碎矿石、粒→锭等) YES；胶带锁定 NO
-        return tBox.allowInsertion(aStack);
+        if (aSlot == SLOT_ROUTER) return canRouteInsert(aStack); // 路由槽：唯一写入入口
+        // 幻影槽(1..N)只读：它们是背后储物桶的“视图”，与路由槽指向同一批桶。
+        // 若同时允许写入，AE2/管道会对同一物品写两次（路由槽一次+幻影槽一次）→ 数量虚高/复制。
+        // 抽取不受影响：decrStackSize/canExtractItem 走另一条路。
+        return F;
     }
 
     // --------------------------------------------------------------
