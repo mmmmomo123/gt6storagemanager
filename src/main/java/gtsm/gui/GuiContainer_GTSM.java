@@ -5,22 +5,58 @@ import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.inventory.GuiContainer;
-import net.minecraft.util.ResourceLocation;
 import gtsm.Config;
 import gtsm.network.GTSM_Network;
 import gtsm.network.PacketRangeChange;
 import gtsm.tile.TileEntityStorageManager;
 import gtsm.client.RangeClientData;
+import org.lwjgl.opengl.GL11;
 
 import static gregapi.data.CS.*;
 
-/** 范围控制 GUI 的客户端界面：6 个偏移控制 + 半径 + 两个开关。数值以服务端同步回来的缓存为准。 */
+/**
+ * 范围控制 GUI 的客户端界面：6 个偏移控制 + 半径 + 两个开关。
+ * 数值以服务端同步回来的缓存为准（{@link RangeClientData}）。
+ *
+ * 布局（相对 guiLeft/guiTop，面板 176x165）：
+ *   标题 / 副标题
+ *   X/Y/Z/R 四行：右对齐标签 + 减钮 + 数值框 + 加钮
+ *   分隔线
+ *   两个整行开关按钮（Custom Range / Show Frame）
+ *   分隔线 + Effective Range（Min/Max 两行）
+ */
 @SideOnly(Side.CLIENT)
 public final class GuiContainer_GTSM extends GuiContainer {
-    private static final ResourceLocation BACKGROUND = new ResourceLocation("gregtech", "textures/gui/machines/Default.png");
-
     private final Container_GTSM mContainer;
     private RangeClientData.Info mData;
+
+    // ---- 布局常量（绘制与命中检测共用） ----
+    private static final int COL_LABEL_RIGHT = 74;   // 标签右对齐边缘
+    private static final int BTN_MINUS_X = 78,  BTN_W = 20;
+    private static final int VAL_X = 102,        VAL_W = 38;
+    private static final int BTN_PLUS_X = 144,  BTN_PLUS_W = 20;
+    private static final int ROW_H = 18;
+    private static final int ROW_X = 30, ROW_Y = 48, ROW_Z = 66, ROW_R = 84;
+    private static final int ROW_T_RANGE = 108, ROW_T_FRAME = 126;
+    private static final int TOGGLE_X = 14, TOGGLE_W = 148;
+    private static final int SEP1_Y = 100, SEP2_Y = 142;
+    private static final int MIN_Y = 147, MAX_Y = 157;
+
+    // ---- 配色 ----
+    private static final int C_PANEL      = 0xF00C0C10; // 半透明深色面板
+    private static final int C_BORDER     = 0xFF4A6B8A; // 面板边框（冷蓝灰）
+    private static final int C_TITLE      = 0xFFFFFFFF;
+    private static final int C_SUBTITLE   = 0xFF9AA5B1;
+    private static final int C_LABEL      = 0xFFC9D1D9;
+    private static final int C_VALUE      = 0xFF33FFCC; // 数值：亮青绿
+    private static final int C_BUTTON     = 0xFF23262B; // 按钮底
+    private static final int C_BUTTON_HI  = 0xFF3A4048; // 按钮高光边
+    private static final int C_BUTTON_TXT = 0xFFFFFFFF;
+    private static final int C_ON         = 0xFF1B5E20; // 开关：开
+    private static final int C_OFF        = 0xFF4E342E; // 开关：关
+    private static final int C_LED_ON     = 0xFF55FF77;
+    private static final int C_LED_OFF    = 0xFF8A8A8A;
+    private static final int C_RANGETXT   = 0xFF8899AA;
 
     public GuiContainer_GTSM(Container_GTSM aContainer) {
         super(aContainer);
@@ -29,80 +65,87 @@ public final class GuiContainer_GTSM extends GuiContainer {
         ySize = 165;
     }
 
-    /** 客户端按钮矩形定义（相对 guiLeft/guiTop） */
-    private static final int B_X = 60, B_W = 20, V_X = 85, V_W = 36, P_X = 125;
-    private static final int ROW_H = 16;
-    private static final int ROW_X = 22, ROW_Y = 38, ROW_Z = 54, ROW_R = 70, ROW_TR = 88, ROW_TF = 104;
-
     @Override
     protected void drawGuiContainerBackgroundLayer(float aPartialTicks, int aMouseX, int aMouseY) {
         TileEntityStorageManager tTE = mContainer.mTE;
         mData = RangeClientData.get(tTE.xCoord, tTE.yCoord, tTE.zCoord);
 
-        // 本地镜像：缓存优先（联机/单服真实数据），缺失时退化为 TE 自身值（单人开局瞬间）
         int tOX = mData != null ? mData.offsetX : 0;
         int tOY = mData != null ? mData.offsetY : 0;
         int tOZ = mData != null ? mData.offsetZ : 0;
         int tRadius = mData != null ? mData.radius : Config.scanRadius;
         boolean tRangeOn = mData != null ? mData.rangeEnabled : T;
         boolean tFrameOn = mData != null ? mData.showFrame : T;
+        int tEffR = tRangeOn ? tRadius : Config.scanRadius;
 
-        Minecraft tMC = Minecraft.getMinecraft();
-        tMC.getTextureManager().bindTexture(BACKGROUND);
-        drawTexturedModalRect(guiLeft, guiTop, 0, 0, xSize, ySize);
-
+        int L = guiLeft, Tp = guiTop;
         FontRenderer tFont = fontRendererObj;
-        tFont.drawStringWithShadow("Storage Manager", guiLeft + 8, guiTop + 6, 0xFFFFFF);
 
-        label(tFont, "X Offset", guiLeft + 8, guiTop + ROW_X + 4);
-        label(tFont, "Y Offset", guiLeft + 8, guiTop + ROW_Y + 4);
-        label(tFont, "Z Offset", guiLeft + 8, guiTop + ROW_Z + 4);
-        label(tFont, "Radius", guiLeft + 8, guiTop + ROW_R + 4);
+        // ---- 半透明面板 + 边框（不再使用网格背景图） ----
+        GL11.glEnable(GL11.GL_BLEND);
+        drawRect(L, Tp, L + xSize, Tp + ySize, C_PANEL);
+        GL11.glDisable(GL11.GL_BLEND);
+        // 上/左亮边、下右暗边，制造浮起感
+        drawRect(L, Tp, L + xSize, Tp + 1, C_BORDER);
+        drawRect(L, Tp, L + 1, Tp + ySize, C_BORDER);
+        drawRect(L, Tp + ySize - 1, L + xSize, Tp + ySize, 0x80000000);
+        drawRect(L + xSize - 1, Tp, L + xSize, Tp + ySize, 0x80000000);
 
-        // 偏移/半径 行
-        stepRow(guiLeft + B_X, guiTop + ROW_X); valueBox(tFont, Integer.toString(tOX), guiLeft + V_X, guiTop + ROW_X); stepButton(guiLeft + P_X, guiTop + ROW_X);
-        stepRow(guiLeft + B_X, guiTop + ROW_Y); valueBox(tFont, Integer.toString(tOY), guiLeft + V_X, guiTop + ROW_Y); stepButton(guiLeft + P_X, guiTop + ROW_Y);
-        stepRow(guiLeft + B_X, guiTop + ROW_Z); valueBox(tFont, Integer.toString(tOZ), guiLeft + V_X, guiTop + ROW_Z); stepButton(guiLeft + P_X, guiTop + ROW_Z);
-        stepRow(guiLeft + B_X, guiTop + ROW_R); valueBox(tFont, Integer.toString(tRadius), guiLeft + V_X, guiTop + ROW_R); stepButton(guiLeft + P_X, guiTop + ROW_R);
+        // ---- 标题 ----
+        tFont.drawStringWithShadow("Storage Manager", L + 10, Tp + 7, C_TITLE);
+        tFont.drawStringWithShadow("Range Configuration", L + 10, Tp + 17, C_SUBTITLE);
 
-        // 开关按钮
-        toggleButton(tFont, "Custom Range: " + (tRangeOn ? "ON" : "OFF"), tRangeOn, guiLeft + 30, guiTop + ROW_TR);
-        toggleButton(tFont, "Show Frame: " + (tFrameOn ? "ON" : "OFF"), tFrameOn, guiLeft + 30, guiTop + ROW_TF);
+        // ---- 参数行 ----
+        paramRow(tFont, "X Offset", tOX, L, Tp + ROW_X);
+        paramRow(tFont, "Y Offset", tOY, L, Tp + ROW_Y);
+        paramRow(tFont, "Z Offset", tOZ, L, Tp + ROW_Z);
+        paramRow(tFont, "Radius",   tRadius, L, Tp + ROW_R);
 
-        // 当前范围文本
-        int tEX1 = tTE.xCoord + (tRangeOn ? tOX : 0) - (tRangeOn ? tRadius : Config.scanRadius);
-        int tEY1 = tTE.yCoord + (tRangeOn ? tOY : 0) - (tRangeOn ? tRadius : Config.scanRadius);
-        int tEZ1 = tTE.zCoord + (tRangeOn ? tOZ : 0) - (tRangeOn ? tRadius : Config.scanRadius);
-        int tEX2 = tTE.xCoord + (tRangeOn ? tOX : 0) + (tRangeOn ? tRadius : Config.scanRadius);
-        int tEY2 = tTE.yCoord + (tRangeOn ? tOY : 0) + (tRangeOn ? tRadius : Config.scanRadius);
-        int tEZ2 = tTE.zCoord + (tRangeOn ? tOZ : 0) + (tRangeOn ? tRadius : Config.scanRadius);
-        tFont.drawStringWithShadow("Effective Range:", guiLeft + 8, guiTop + 126, 0xCCCCCC);
-        tFont.drawStringWithShadow("(" + tEX1 + ", " + tEY1 + ", " + tEZ1 + ") -> (" + tEX2 + ", " + tEY2 + ", " + tEZ2 + ")", guiLeft + 8, guiTop + 138, 0x888888);
+        // ---- 分隔线 1 ----
+        drawRect(L + 8, Tp + SEP1_Y, L + xSize - 8, Tp + SEP1_Y + 1, 0x44FFFFFF);
+
+        // ---- 开关行 ----
+        toggleRow(tFont, "Custom Range", tRangeOn, L + TOGGLE_X, Tp + ROW_T_RANGE, TOGGLE_W);
+        toggleRow(tFont, "Show Frame",  tFrameOn, L + TOGGLE_X, Tp + ROW_T_FRAME, TOGGLE_W);
+
+        // ---- 分隔线 2 ----
+        drawRect(L + 8, Tp + SEP2_Y, L + xSize - 8, Tp + SEP2_Y + 1, 0x44FFFFFF);
+
+        // ---- Effective Range（Min/Max 分行，等宽展示） ----
+        tFont.drawStringWithShadow("Effective Range:", L + 10, Tp + MIN_Y - 9, C_SUBTITLE);
+        tFont.drawStringWithShadow("Min  " + (tTE.xCoord + (tRangeOn ? tOX : 0) - tEffR) + ", " + (tTE.yCoord + (tRangeOn ? tOY : 0) - tEffR) + ", " + (tTE.zCoord + (tRangeOn ? tOZ : 0) - tEffR), L + 10, Tp + MIN_Y, C_RANGETXT);
+        tFont.drawStringWithShadow("Max  " + (tTE.xCoord + (tRangeOn ? tOX : 0) + tEffR) + ", " + (tTE.yCoord + (tRangeOn ? tOY : 0) + tEffR) + ", " + (tTE.zCoord + (tRangeOn ? tOZ : 0) + tEffR), L + 10, Tp + MAX_Y, C_RANGETXT);
     }
 
-    private void label(FontRenderer aFont, String aText, int aX, int aY) {
-        aFont.drawStringWithShadow(aText, aX, aY, 0xCCCCCC);
+    /** 一行参数：右对齐标签 + 减钮 + 数值框 + 加钮 */
+    private void paramRow(FontRenderer aFont, String aLabel, int aValue, int aL, int aRowY) {
+        aFont.drawStringWithShadow(aLabel, aL + COL_LABEL_RIGHT - aFont.getStringWidth(aLabel), aRowY + 5, C_LABEL);
+        stepButton(aL + BTN_MINUS_X, aRowY, "-");
+        valueBox(aFont, Integer.toString(aValue), aL + VAL_X, aRowY);
+        stepButton(aL + BTN_PLUS_X, aRowY, "+");
     }
 
-    /** 「-」按钮 */
-    private void stepRow(int aX, int aY) { button(aX, aY, "-"); }
-
-    private void stepButton(int aX, int aY) { button(aX, aY, "+"); }
-
-    private void button(int aX, int aY, String aText) {
-        drawRect(aX, aY, aX + B_W, aY + ROW_H, 0xAA333333);
-        drawRect(aX, aY, aX + B_W - 1, aY + 1, 0xAA666666);
-        fontRendererObj.drawStringWithShadow(aText, aX + 7, aY + 4, 0xFFFFFF);
+    private void stepButton(int aX, int aY, String aText) {
+        drawRect(aX, aY, aX + BTN_W, aY + ROW_H, C_BUTTON);
+        drawRect(aX, aY, aX + BTN_W, aY + 1, C_BUTTON_HI);
+        drawRect(aX, aY, aX + 1, aY + ROW_H, C_BUTTON_HI);
+        fontRendererObj.drawStringWithShadow(aText, aX + BTN_W / 2 - 3, aY + 5, C_BUTTON_TXT);
     }
 
     private void valueBox(FontRenderer aFont, String aText, int aX, int aY) {
-        drawRect(aX, aY, aX + V_W, aY + ROW_H, 0xAA222222);
-        aFont.drawStringWithShadow(aText, aX + V_W / 2 - aFont.getStringWidth(aText) / 2, aY + 4, 0x33FF88);
+        drawRect(aX, aY, aX + VAL_W, aY + ROW_H, 0xFF101418);
+        drawRect(aX, aY, aX + VAL_W, aY + 1, C_BUTTON_HI);
+        aFont.drawStringWithShadow(aText, aX + VAL_W / 2 - aFont.getStringWidth(aText) / 2, aY + 5, C_VALUE);
     }
 
-    private void toggleButton(FontRenderer aFont, String aText, boolean aEnabled, int aX, int aY) {
-        drawRect(aX, aY, aX + 116, aY + ROW_H, aEnabled ? 0xAA1B5E20 : 0xAA4E342E);
-        aFont.drawStringWithShadow(aText, aX + 8, aY + 4, 0xFFFFFF);
+    /** 整行开关：底色区分开关态 + 左侧 LED + 文字 */
+    private void toggleRow(FontRenderer aFont, String aLabel, boolean aOn, int aX, int aY, int aW) {
+        drawRect(aX, aY, aX + aW, aY + ROW_H, aOn ? C_ON : C_OFF);
+        drawRect(aX, aY, aX + aW, aY + 1, C_BUTTON_HI);
+        drawRect(aX, aY, aX + 1, aY + ROW_H, C_BUTTON_HI);
+        // LED
+        drawRect(aX + 7, aY + 5, aX + 15, aY + 13, aOn ? C_LED_ON : C_LED_OFF);
+        aFont.drawStringWithShadow(aLabel + ": " + (aOn ? "ON" : "OFF"), aX + 22, aY + 5, 0xFFFFFFFF);
     }
 
     @Override
@@ -118,16 +161,16 @@ public final class GuiContainer_GTSM extends GuiContainer {
 
         byte tId = -1;
         int tValue = 0;
-        if (hit(rx, ry, B_X, ROW_X)) { tId = TileEntityStorageManager.GUI_OFF_X_DEC; tValue = tOX - 1; }
-        else if (hit(rx, ry, P_X, ROW_X)) { tId = TileEntityStorageManager.GUI_OFF_X_INC; tValue = tOX + 1; }
-        else if (hit(rx, ry, B_X, ROW_Y)) { tId = TileEntityStorageManager.GUI_OFF_Y_DEC; tValue = tOY - 1; }
-        else if (hit(rx, ry, P_X, ROW_Y)) { tId = TileEntityStorageManager.GUI_OFF_Y_INC; tValue = tOY + 1; }
-        else if (hit(rx, ry, B_X, ROW_Z)) { tId = TileEntityStorageManager.GUI_OFF_Z_DEC; tValue = tOZ - 1; }
-        else if (hit(rx, ry, P_X, ROW_Z)) { tId = TileEntityStorageManager.GUI_OFF_Z_INC; tValue = tOZ + 1; }
-        else if (hit(rx, ry, B_X, ROW_R)) { tId = TileEntityStorageManager.GUI_RADIUS_DEC; tValue = tRadius - 1; }
-        else if (hit(rx, ry, P_X, ROW_R)) { tId = TileEntityStorageManager.GUI_RADIUS_INC; tValue = tRadius + 1; }
-        else if (hit(rx, ry, 30, ROW_TR)) { tId = TileEntityStorageManager.GUI_TOGGLE_RANGE; tValue = (mData != null && mData.rangeEnabled) ? 0 : 1; }
-        else if (hit(rx, ry, 30, ROW_TF)) { tId = TileEntityStorageManager.GUI_TOGGLE_FRAME; tValue = (mData != null && mData.showFrame) ? 0 : 1; }
+        if (hit(rx, ry, BTN_MINUS_X, ROW_X, BTN_W)) { tId = TileEntityStorageManager.GUI_OFF_X_DEC; tValue = tOX - 1; }
+        else if (hit(rx, ry, BTN_PLUS_X, ROW_X, BTN_PLUS_W)) { tId = TileEntityStorageManager.GUI_OFF_X_INC; tValue = tOX + 1; }
+        else if (hit(rx, ry, BTN_MINUS_X, ROW_Y, BTN_W)) { tId = TileEntityStorageManager.GUI_OFF_Y_DEC; tValue = tOY - 1; }
+        else if (hit(rx, ry, BTN_PLUS_X, ROW_Y, BTN_PLUS_W)) { tId = TileEntityStorageManager.GUI_OFF_Y_INC; tValue = tOY + 1; }
+        else if (hit(rx, ry, BTN_MINUS_X, ROW_Z, BTN_W)) { tId = TileEntityStorageManager.GUI_OFF_Z_DEC; tValue = tOZ - 1; }
+        else if (hit(rx, ry, BTN_PLUS_X, ROW_Z, BTN_PLUS_W)) { tId = TileEntityStorageManager.GUI_OFF_Z_INC; tValue = tOZ + 1; }
+        else if (hit(rx, ry, BTN_MINUS_X, ROW_R, BTN_W)) { tId = TileEntityStorageManager.GUI_RADIUS_DEC; tValue = tRadius - 1; }
+        else if (hit(rx, ry, BTN_PLUS_X, ROW_R, BTN_PLUS_W)) { tId = TileEntityStorageManager.GUI_RADIUS_INC; tValue = tRadius + 1; }
+        else if (hit(rx, ry, TOGGLE_X, ROW_T_RANGE, TOGGLE_W)) { tId = TileEntityStorageManager.GUI_TOGGLE_RANGE; tValue = (mData != null && mData.rangeEnabled) ? 0 : 1; }
+        else if (hit(rx, ry, TOGGLE_X, ROW_T_FRAME, TOGGLE_W)) { tId = TileEntityStorageManager.GUI_TOGGLE_FRAME; tValue = (mData != null && mData.showFrame) ? 0 : 1; }
         else return;
 
         GTSM_Network.WRAPPER.sendToServer(new PacketRangeChange(tTE.xCoord, tTE.yCoord, tTE.zCoord, tId, tValue));
@@ -144,12 +187,7 @@ public final class GuiContainer_GTSM extends GuiContainer {
         }
     }
 
-    private boolean hit(int aRX, int aRY, int aBX, int aBY) {
-        return aRX >= aBX && aRX <= aBX + B_W && aRY >= aBY && aRY <= aBY + ROW_H;
-    }
-
-    @Override
-    public void onGuiClosed() {
-        super.onGuiClosed();
+    private boolean hit(int aRX, int aRY, int aBX, int aBY, int aBW) {
+        return aRX >= aBX && aRX <= aBX + aBW && aRY >= aBY && aRY <= aBY + ROW_H;
     }
 }

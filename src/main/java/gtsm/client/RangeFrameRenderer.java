@@ -20,22 +20,20 @@ public final class RangeFrameRenderer {
     public void onRenderWorldLast(RenderWorldLastEvent aEvent) {
         Entity rv = Minecraft.getMinecraft().renderViewEntity;
         if (rv == null) return;
-        // 直接用实体当前坐标（不做插值），线框随视角平移的 1 格内抖动在可接受范围内
-        double rpX = rv.posX;
-        double rpY = rv.posY;
-        double rpZ = rv.posZ;
 
         for (RangeClientData.Info tInfo : RangeClientData.all()) {
             if (!tInfo.showFrame) continue;
             double cX = tInfo.x + tInfo.offsetX + 0.5D, cY = tInfo.y + tInfo.offsetY + 0.5D, cZ = tInfo.z + tInfo.offsetZ + 0.5D;
-            if ((cX-rpX)*(cX-rpX) + (cY-rpY)*(cY-rpY) + (cZ-rpZ)*(cZ-rpZ) > RENDER_DISTANCE_SQ) continue;
+            if ((cX-rv.posX)*(cX-rv.posX) + (cY-rv.posY)*(cY-rv.posY) + (cZ-rv.posZ)*(cZ-rv.posZ) > RENDER_DISTANCE_SQ) continue;
 
-            double x1 = tInfo.x + tInfo.offsetX - tInfo.radius - rpX;
-            double y1 = tInfo.y + tInfo.offsetY - tInfo.radius - rpY;
-            double z1 = tInfo.z + tInfo.offsetZ - tInfo.radius - rpZ;
-            double x2 = tInfo.x + tInfo.offsetX + tInfo.radius + 1 - rpX;
-            double y2 = tInfo.y + tInfo.offsetY + tInfo.radius + 1 - rpY;
-            double z2 = tInfo.z + tInfo.offsetZ + tInfo.radius + 1 - rpZ;
+            // RenderWorldLastEvent 的模型视图已带相机变换，这里直接用【世界绝对坐标】，
+            // 减去玩家坐标会导致线框跟着人物移动（世界锚定才是正确行为）。
+            double x1 = tInfo.x + tInfo.offsetX - tInfo.radius;
+            double y1 = tInfo.y + tInfo.offsetY - tInfo.radius;
+            double z1 = tInfo.z + tInfo.offsetZ - tInfo.radius;
+            double x2 = tInfo.x + tInfo.offsetX + tInfo.radius + 1;
+            double y2 = tInfo.y + tInfo.offsetY + tInfo.radius + 1;
+            double z2 = tInfo.z + tInfo.offsetZ + tInfo.radius + 1;
 
             float r, g, b, a;
             if (tInfo.rangeEnabled) { r = 0.15F; g = 1.00F; b = 0.45F; a = 0.85F; }

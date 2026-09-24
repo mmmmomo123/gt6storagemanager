@@ -146,19 +146,21 @@ public final class StorageManager_Mod extends Abstract_Mod {
         }
 
         // aca / bdb / aca —— a=铝板 b=t3以上电路 c=铂物品管道 d=存储输入器
-        // 电路从「高级电子电路」起(t3+)：注册时用 [2]，再补 3 份(数据/精英/大师)，共 4 种可用
+        // GT6 电路阶梯：[0]Primitive [1]Basic(基础) [2]Good(低级) [3]Advanced [4]Elite [5]Master [6]Ultimate(究极)
+        // 需求：排除基础/低级，接受 t3+（高级/精英/大师/究极），共 4 种
+        int[] tCircuitIDs = {3, 4, 5, 6};
         ItemStack tSelf = tRegistry.add("Storage Manager", "Storage", MTE_ID, 0, TileEntityStorageManager.class, 0, 16, tBlock,
                 UT.NBT.make(CS.NBT_TEXTURE, TEXTURE_NAME, CS.NBT_HARDNESS, 6.0F, CS.NBT_RESISTANCE, 6.0F),
                 "PCP", "BDB", "PCP",
                 'P', OP.plate.dat(MT.Al),
                 'C', tPipe,
-                'B', MT.DATA.CIRCUITS[2],
+                'B', MT.DATA.CIRCUITS[tCircuitIDs[0]],
                 'D', tInserter);
-        for (int i = 3; i <= 5 && i < MT.DATA.CIRCUITS.length; i++) {
+        for (int i = 1; i < tCircuitIDs.length; i++) {
             CR.shaped(tSelf, CR.DEF, "PCP", "BDB", "PCP",
                     'P', OP.plate.dat(MT.Al),
                     'C', tPipe,
-                    'B', MT.DATA.CIRCUITS[i],
+                    'B', MT.DATA.CIRCUITS[tCircuitIDs[i]],
                     'D', tInserter);
         }
     }
