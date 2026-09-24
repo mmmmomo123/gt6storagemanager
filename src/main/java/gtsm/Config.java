@@ -5,8 +5,8 @@ package gtsm;
  * 保持非 final，方便后续在游戏内通过命令/工具调整（当前仅配置文件）。
  */
 public class Config {
-    /** 管理器扫描半径（格），1 = 仅相邻 26 格 */
-    public static int scanRadius = 1;
+    /** 管理器扫描半径（格），8 = 上下左右各 8 格 */
+    public static int scanRadius = 8;
     /** 最多同时管理的储物桶数量 */
     public static int maxBoxes = 26;
     /** 是否允许把新品种物品自动放进空储物桶 */

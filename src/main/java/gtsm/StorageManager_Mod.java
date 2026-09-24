@@ -87,7 +87,7 @@ public final class StorageManager_Mod extends Abstract_Mod {
         // ---------- 配置 ----------
         Configuration tConfig = new Configuration(aEvent.getSuggestedConfigurationFile());
         tConfig.load();
-        Config.scanRadius     = tConfig.getInt  ("scanRadius",     "general", 1,     1, 8,  "管理器扫描半径（1 = 仅相邻 26 格）");
+        Config.scanRadius     = tConfig.getInt  ("scanRadius",     "general", 8,     1, 8, "管理器扫描半径（8 = 上下左右各 8 格）");
         Config.maxBoxes       = tConfig.getInt  ("maxBoxes",       "general", 26,    1, 64, "最多同时管理的储物桶数量");
         Config.fillEmptyBoxes = tConfig.getBoolean("fillEmptyBoxes","general", true,    "允许把新品种物品自动放进空储物桶");
         Config.oreDictUnify   = tConfig.getBoolean("oreDictUnify",  "general", true,    "插入时走 GT6 的矿物词典统一（和 GT6 设备一致）");

@@ -1,6 +1,7 @@
 package gtsm.tile;
 
 import gregapi.GT_API;
+import appeng.util.inv.IInventoryWrapper;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_AddToolTips;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_GetBlockHardness;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_GetComparatorInputOverride;
@@ -53,7 +54,8 @@ import static gregapi.data.CS.*;
  */
 public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
         implements IInventory, ISidedInventory, IMTE_OnToolClick, IMTE_AddToolTips,
-                   IMTE_GetBlockHardness, IMTE_GetExplosionResistance, IMTE_GetComparatorInputOverride {
+                   IMTE_GetBlockHardness, IMTE_GetExplosionResistance, IMTE_GetComparatorInputOverride,
+                   IInventoryWrapper {
 
     /** 通用路由槽的下标 */
     public static final int SLOT_ROUTER = 0;
@@ -233,7 +235,13 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
         MultiTileEntityMassStorage tBox = box(aSlot);
         if (tBox == null || aAmount <= 0) return null;
         if (isTaped(tBox)) return null; // 锁定的桶不允许抽出
-        return ((IInventory) tBox).decrStackSize(1, aAmount); // MC 方法 → 强转原版类型调用
+        ItemStack tContent = tBox.slot(1);
+        if (!ST.valid(tContent)) return null;
+        // 走 GT6 官方取出 API（ITileEntityConnectedInventory），保证 mMode/同步语义正确
+        int tWant = Math.min(aAmount, tContent.stackSize);
+        int tTaken = tBox.removeStackFromConnectedInventory((byte) 0, ST.amount(tWant, tContent), F);
+        if (tTaken <= 0) return null;
+        return ST.amount(tTaken, tContent);
     }
 
     @Override
@@ -241,6 +249,16 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
         return null; // 没有真实库存，关闭时不掉落任何东西
     }
 
+    /**
+     * 把幻影槽「设置」为 aStack（null = 清空）。
+     *
+     * <p><b>关键语义</b>：大量自动化（AE2 的 {@code AdaptorIInventory.removeItems/addItems} 等）
+     * 并不调用 {@code decrStackSize}，而是把「取出后剩余的堆」通过本方法写回槽位来完成扣除。
+     * 因此本方法必须按<b>目标数量与当前数量的差值</b>同步到储物桶：
+     * target &lt; current → 从桶取出差值；target &gt; current → 往桶放入差值。
+     * 若把 aStack 当作「要放入的物品」处理，物品会被复制/暴涨（详见 GT6 的
+     * {@code MultiTileEntityMassStorage.setInventorySlotContents} 的相同写法）。</p>
+     */
     @Override
     public void setInventorySlotContents(int aSlot, ItemStack aStack) {
         if (aSlot == SLOT_ROUTER) {
@@ -252,8 +270,19 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
             routeInsert(aStack); // 对应桶不存在，走路由兜底
             return;
         }
-        ItemStack tLeftover = insertIntoBox(tBox, aStack); // 幻影槽：放进对应桶
-        if (tLeftover != null) routeInsert(tLeftover);     // 该桶放不进就尝试其他桶，避免丢失
+        ItemStack tCurrent = tBox.slot(1);
+        int tNow = ST.valid(tCurrent) ? tCurrent.stackSize : 0;
+        int tTarget = ST.valid(aStack) ? aStack.stackSize : 0;
+        if (tTarget == tNow) return;
+        if (tTarget < tNow) {
+            // 取出差值（GT6 官方 API；胶带锁定时返回 0，绝不复制物品）
+            tBox.removeStackFromConnectedInventory((byte) 0, ST.amount(tNow - tTarget, tCurrent), F);
+        } else {
+            // 放入差值
+            ItemStack tToAdd = ST.amount(tTarget - tNow, aStack);
+            ItemStack tLeftover = insertIntoBox(tBox, tToAdd);
+            if (tLeftover != null) routeInsert(tLeftover);
+        }
     }
 
     @Override
@@ -273,7 +302,8 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
 
     @Override
     public void markDirty() {
-        // 管理器没有自己的库存，桶的同步由桶自己负责，这里无需做事
+        // 幻影视图：自身无库存，但自动化（AE2/管道）靠 markDirty 感知变化，必须正常标记
+        super.markDirty();
     }
 
     @Override
@@ -315,6 +345,13 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
 
     @Override
     public boolean canExtractItem(int aSlot, ItemStack aStack, int aSide) {
+        MultiTileEntityMassStorage tBox = box(aSlot);
+        return tBox != null && !isTaped(tBox);
+    }
+
+    /** AE2 的 IInventoryWrapper 钩子：存储总线逐槽判断可否抽取（胶带锁定的桶拒绝） */
+    @Override
+    public boolean canRemoveItemFromSlot(int aSlot, ItemStack aStack) {
         MultiTileEntityMassStorage tBox = box(aSlot);
         return tBox != null && !isTaped(tBox);
     }
