@@ -154,7 +154,7 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
         int tIndex = aSlot - SLOT_BOX_BASE;
         if (tIndex >= mBoxes.size()) return null;
         MultiTileEntityMassStorage tBox = mBoxes.get(tIndex);
-        if (tBox == null || ((TileEntity) tBox).isDead()) { // isDead 是 MC 方法 → 强转原版类型调用
+        if (tBox == null || ((TileEntity) tBox).isDead) { // isDead 是 MC 字段 → 强转原版类型后直接读字段
             mNeedsRescan = T;
             return null;
         }
@@ -401,9 +401,9 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
 
     @Override
     public void addToolTips(List<String> aList, ItemStack aStack, boolean aF3_H) {
-        aList.add(Chat.CYAN + LH.get("gtsm.tooltip.1", "Manages GT6 Storage Boxes in range and exposes one unified Automation Interface"));
-        aList.add(Chat.GRAY + LH.get("gtsm.tooltip.2", "Rightclick to insert held Itemstack, Sneak-Rightclick to insert all matching Stacks"));
-        aList.add(Chat.DGRAY + LH.get("gtsm.tooltip.3", "Screwdriver: toggle filling empty Boxes | Soft Hammer: rescan | Magnifying Glass: details"));
+        aList.add(LH.Chat.CYAN + LH.get("gtsm.tooltip.1", "Manages GT6 Storage Boxes in range and exposes one unified Automation Interface"));
+        aList.add(LH.Chat.GRAY + LH.get("gtsm.tooltip.2", "Rightclick to insert held Itemstack, Sneak-Rightclick to insert all matching Stacks"));
+        aList.add(LH.Chat.DGRAY + LH.get("gtsm.tooltip.3", "Screwdriver: toggle filling empty Boxes | Soft Hammer: rescan | Magnifying Glass: details"));
     }
 
     // --------------------------------------------------------------
