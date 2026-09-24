@@ -138,7 +138,7 @@ public final class StorageManager_Mod extends Abstract_Mod {
         // 配方材料（GT6 6.17.06，单一 MTE 注册表 "gt.multitileentity"）
         MultiTileEntityRegistry tGT = MultiTileEntityRegistry.getRegistry("gt.multitileentity");
         ItemStack tInserter = tGT == null ? null : tGT.getItem(32751); // Storage Inserter（存储输入器）
-        ItemStack tPipe = OP.pipeMedium.dat(MT.Pt);                    // 铂物品管道（Platinum Item Pipe）
+        Object tPipe = OP.pipeMedium.dat(MT.Pt);                    // 铂物品管道（Platinum Item Pipe，OreDictItemData）
 
         if (tInserter == null || !ST.valid(tInserter)) {
             System.out.println("[GTSM] WARNING: Storage Inserter (mTE 32751) not found - recipe skipped (wrong GT6 version?)");

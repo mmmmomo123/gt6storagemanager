@@ -20,9 +20,10 @@ public final class RangeFrameRenderer {
     public void onRenderWorldLast(RenderWorldLastEvent aEvent) {
         Entity rv = Minecraft.getMinecraft().renderViewEntity;
         if (rv == null) return;
-        double rpX = rv.lastTickPosX + (rv.posX - rv.lastTickPosX) * aEvent.partialTick;
-        double rpY = rv.lastTickPosY + (rv.posY - rv.lastTickPosY) * aEvent.partialTick;
-        double rpZ = rv.lastTickPosZ + (rv.posZ - rv.lastTickPosZ) * aEvent.partialTick;
+        // 直接用实体当前坐标（不做插值），线框随视角平移的 1 格内抖动在可接受范围内
+        double rpX = rv.posX;
+        double rpY = rv.posY;
+        double rpZ = rv.posZ;
 
         for (RangeClientData.Info tInfo : RangeClientData.all()) {
             if (!tInfo.showFrame) continue;

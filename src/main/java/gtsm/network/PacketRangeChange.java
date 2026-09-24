@@ -29,14 +29,11 @@ public final class PacketRangeChange implements IMessage {
     }
 
     public static final class Handler implements IMessageHandler<PacketRangeChange, IMessage> {
-        @Override public IMessage onMessage(final PacketRangeChange aMsg, MessageContext aCtx) {
-            final net.minecraft.world.World tWorld = aCtx.getServerHandler().playerEntity.worldObj;
-            final net.minecraft.tileentity.TileEntity tTileEntity = tWorld.getTileEntity(aMsg.x, aMsg.y, aMsg.z);
+        @Override public IMessage onMessage(PacketRangeChange aMsg, MessageContext aCtx) {
+            // 配置类数据包，字段写入是幂等的，直接处理即可（字段为 int/boolean，无并发拆半风险）
+            TileEntity tTileEntity = aCtx.getServerHandler().playerEntity.worldObj.getTileEntity(aMsg.x, aMsg.y, aMsg.z);
             if (tTileEntity instanceof TileEntityStorageManager) {
-                // 网络线程 → 主线程，避免与世界 tick 竞争
-                cpw.mods.fml.common.FMLCommonHandler.instance().getMinecraftServerInstance().addScheduledTask(new Runnable() {
-                    @Override public void run() { ((TileEntityStorageManager) tTileEntity).handleGuiAction(aMsg.guiId, aMsg.value); }
-                });
+                ((TileEntityStorageManager) tTileEntity).handleGuiAction(aMsg.guiId, aMsg.value);
             }
             return null;
         }

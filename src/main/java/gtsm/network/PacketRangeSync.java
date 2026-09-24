@@ -34,13 +34,9 @@ public final class PacketRangeSync implements IMessage {
     }
 
     public static final class Handler implements IMessageHandler<PacketRangeSync, IMessage> {
-        @Override public IMessage onMessage(final PacketRangeSync aMsg, MessageContext aCtx) {
-            // 网络线程 → 客户端主线程
-            net.minecraft.client.Minecraft.getMinecraft().addScheduledTask(new Runnable() {
-                @Override public void run() {
-                    RangeClientData.put(aMsg.x, aMsg.y, aMsg.z, aMsg.offsetX, aMsg.offsetY, aMsg.offsetZ, aMsg.radius, aMsg.rangeEnabled(), aMsg.showFrame());
-                }
-            });
+        @Override public IMessage onMessage(PacketRangeSync aMsg, MessageContext aCtx) {
+            // ConcurrentHashMap 线程安全；无需切主线程
+            RangeClientData.put(aMsg.x, aMsg.y, aMsg.z, aMsg.offsetX, aMsg.offsetY, aMsg.offsetZ, aMsg.radius, aMsg.rangeEnabled(), aMsg.showFrame());
             return null;
         }
     }

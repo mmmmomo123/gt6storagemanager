@@ -183,13 +183,14 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
     /** 立即把本管理器的范围数据同步给 64 格内的玩家（GUI/画框数据源） */
     public void broadcastRange() {
         if (worldObj == null || worldObj.isRemote) return;
+        gtsm.network.PacketRangeSync tPacket = new gtsm.network.PacketRangeSync(xCoord, yCoord, zCoord, mOffsetX, mOffsetY, mOffsetZ, effectiveRadius(), mRangeEnabled, mShowFrame);
         for (int i = 0; i < worldObj.playerEntities.size(); i++) {
             Object tPlayer = worldObj.playerEntities.get(i);
-            if (!(tPlayer instanceof EntityPlayer)) continue;
-            EntityPlayer tEntityPlayer = (EntityPlayer) tPlayer;
+            if (!(tPlayer instanceof net.minecraft.entity.player.EntityPlayerMP)) continue;
+            net.minecraft.entity.player.EntityPlayerMP tEntityPlayer = (net.minecraft.entity.player.EntityPlayerMP) tPlayer;
             double dX = tEntityPlayer.posX - xCoord, dY = tEntityPlayer.posY - yCoord, dZ = tEntityPlayer.posZ - zCoord;
             if (dX*dX + dY*dY + dZ*dZ > 64.0D * 64.0D) continue;
-            gtsm.network.GTSM_Network.WRAPPER.sendTo(new gtsm.network.PacketRangeSync(xCoord, yCoord, zCoord, mOffsetX, mOffsetY, mOffsetZ, effectiveRadius(), mRangeEnabled, mShowFrame), (cpw.mods.fml.common.player.Player) tPlayer);
+            gtsm.network.GTSM_Network.WRAPPER.sendTo(tPacket, tEntityPlayer);
         }
     }
 

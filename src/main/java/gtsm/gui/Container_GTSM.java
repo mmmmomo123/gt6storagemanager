@@ -17,6 +17,6 @@ public final class Container_GTSM extends Container {
 
     @Override
     public boolean canInteractWith(EntityPlayer aPlayer) {
-        return mTE != null && mTE.worldObj != null && !mTE.mIsDead;
+        return mTE != null && mTE.getWorld() != null && !mTE.mIsDead;
     }
 }
