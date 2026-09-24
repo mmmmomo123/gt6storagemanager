@@ -244,6 +244,13 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
     private void rescan() {
         mBoxes.clear();
         if (worldObj == null) return;
+        // 收集其他管理器：每个储物桶只归“最近的管理器”所有。
+        // 否则多个管理器扫描范围重叠时，同一个桶被多方认领 → AE2 网络重复计数（物品×管理器数量）。
+        java.util.List<TileEntityStorageManager> tOthers = new java.util.ArrayList<TileEntityStorageManager>();
+        for (int i = 0; i < worldObj.loadedTileEntityList.size(); i++) {
+            Object tObj = worldObj.loadedTileEntityList.get(i);
+            if (tObj instanceof TileEntityStorageManager && tObj != this) tOthers.add((TileEntityStorageManager) tObj);
+        }
         int tMinX = rangeMinX(), tMinY = rangeMinY(), tMinZ = rangeMinZ();
         int tMaxX = rangeMaxX(), tMaxY = rangeMaxY(), tMaxZ = rangeMaxZ();
         for (int tX = tMinX; tX <= tMaxX; tX++)
@@ -252,10 +259,39 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
                     if (tX == xCoord && tY == yCoord && tZ == zCoord) continue; // 跳过自己
                     Object tTileEntity = worldObj.getTileEntity(tX, tY, tZ);
                     if (tTileEntity instanceof MultiTileEntityMassStorage) {
-                        mBoxes.add((MultiTileEntityMassStorage) tTileEntity);
+                        MultiTileEntityMassStorage tBox = (MultiTileEntityMassStorage) tTileEntity;
+                        if (!isBoxOwner(tBox, tOthers)) continue; // 别的管理器更近 → 不认领
+                        mBoxes.add(tBox);
                         if (mBoxes.size() >= Config.maxBoxes) return;
                     }
                 }
+    }
+
+    /**
+     * 判断某个储物桶是否归本管理器所有：
+     * 距离近者赢；距离相同则坐标字典序小者赢（保证多个管理器判定一致、无歧义）。
+     * 这样每个桶全图只有一个管理器认领，AE2 看到的就是真实数量。
+     */
+    private boolean isBoxOwner(MultiTileEntityMassStorage aBox, java.util.List<TileEntityStorageManager> aOthers) {
+        double tMyDist = (double) (xCoord - aBox.xCoord) * (xCoord - aBox.xCoord)
+                       + (double) (yCoord - aBox.yCoord) * (yCoord - aBox.yCoord)
+                       + (double) (zCoord - aBox.zCoord) * (zCoord - aBox.zCoord);
+        for (int i = 0; i < aOthers.size(); i++) {
+            TileEntityStorageManager tOther = aOthers.get(i);
+            double tDist = (double) (tOther.xCoord - aBox.xCoord) * (tOther.xCoord - aBox.xCoord)
+                         + (double) (tOther.yCoord - aBox.yCoord) * (tOther.yCoord - aBox.yCoord)
+                         + (double) (tOther.zCoord - aBox.zCoord) * (tOther.zCoord - aBox.zCoord);
+            if (tDist < tMyDist) return F;
+            if (tDist == tMyDist) {
+                // 并列：坐标字典序小者拥有（x, then y, then z）
+                if (tOther.xCoord < xCoord) return F;
+                if (tOther.xCoord == xCoord) {
+                    if (tOther.yCoord < yCoord) return F;
+                    if (tOther.yCoord == yCoord && tOther.zCoord < zCoord) return F;
+                }
+            }
+        }
+        return T;
     }
 
     /** 需要时才重扫；否则保证列表里的桶仍然有效（无效则标记重扫并返回 null） */

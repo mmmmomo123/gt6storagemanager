@@ -43,7 +43,7 @@ public final class StorageManager_Mod extends Abstract_Mod {
     /** Mod-ID 必须全小写、无空格（vanilla 资源包限制） */
     public static final String MOD_ID = "gtsm";
     public static final String MOD_NAME = "GT6 Storage Manager";
-    public static final String VERSION = "1.0.8";
+    public static final String VERSION = "1.0.9";
 
     /** GT 的 ModData 对象 */
     public static final ModData MOD_DATA = new ModData(MOD_ID, MOD_NAME);
