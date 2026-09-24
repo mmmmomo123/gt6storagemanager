@@ -395,7 +395,7 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
 
     @Override
     public String getInventoryName() {
-        return LH.get("gtsm.storage.manager", "Storage Manager");
+        return LH.get("gtsm.storage.manager", "储物桶管理器");
     }
 
     @Override
@@ -521,15 +521,15 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
         if (aTool.equals(TOOL_screwdriver)) {
             mFillEmptyBoxes = !mFillEmptyBoxes;
             if (aChatReturn != null) aChatReturn.add(mFillEmptyBoxes
-                    ? LH.get("gtsm.chat.fill.on" , "Will fill empty Storage Boxes with new Item Types")
-                    : LH.get("gtsm.chat.fill.off", "Won't fill empty Storage Boxes with new Item Types"));
+                    ? LH.get("gtsm.chat.fill.on" , "将允许把新品种物品放入空储物桶")
+                    : LH.get("gtsm.chat.fill.off", "将不会占用空储物桶"));
             return 1;
         }
         if (aTool.equals(TOOL_softhammer)) {
             mNeedsRescan = T;
             rescan();
             mNeedsRescan = F;
-            if (aChatReturn != null) aChatReturn.add(LH.get("gtsm.chat.rescan", "Rescanned Area, found") + " " + mBoxes.size() + " " + LH.get("gtsm.chat.boxes", "Storage Boxes"));
+            if (aChatReturn != null) aChatReturn.add(LH.get("gtsm.chat.rescan", "已重新扫描区域，找到") + " " + mBoxes.size() + " " + LH.get("gtsm.chat.boxes", "个储物桶"));
             return 1;
         }
         if (aTool.equals(TOOL_magnifyingglass)) {
@@ -540,10 +540,10 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
                     if (tBox.slotHas(1)) tUsed++;
                     if (isTaped(tBox)) tLocked++;
                 }
-                aChatReturn.add(LH.get("gtsm.storage.manager", "Storage Manager"));
-                aChatReturn.add(LH.get("gtsm.chat.scope", "Storage Boxes") + ": " + mBoxes.size() + " (" + LH.get("gtsm.chat.used", "in use") + ": " + tUsed + ", " + LH.get("gtsm.chat.empty", "empty") + ": " + (mBoxes.size() - tUsed) + ", " + LH.get("gtsm.chat.locked", "locked") + ": " + tLocked + ")");
-                aChatReturn.add((mRangeEnabled ? LH.get("gtsm.chat.range.custom", "Custom Range") : LH.get("gtsm.chat.range.default", "Default Range")) + ": (" + rangeMinX() + ", " + rangeMinY() + ", " + rangeMinZ() + ") - (" + rangeMaxX() + ", " + rangeMaxY() + ", " + rangeMaxZ() + ")  " + LH.get("gtsm.chat.radius", "Radius") + ": " + effectiveRadius() + "  " + LH.get("gtsm.chat.offset", "Offset") + ": (" + (mRangeEnabled ? mOffsetX : 0) + ", " + (mRangeEnabled ? mOffsetY : 0) + ", " + (mRangeEnabled ? mOffsetZ : 0) + ")");
-                aChatReturn.add(LH.get("gtsm.chat.oredict", "OreDict Unify") + ": " + Config.oreDictUnify + "  " + LH.get("gtsm.chat.fill", "Fill Empty") + ": " + mFillEmptyBoxes);
+                aChatReturn.add(LH.get("gtsm.storage.manager", "储物桶管理器"));
+                aChatReturn.add(LH.get("gtsm.chat.scope", "储物桶") + ": " + mBoxes.size() + " (" + LH.get("gtsm.chat.used", "已占用") + ": " + tUsed + ", " + LH.get("gtsm.chat.empty", "空闲") + ": " + (mBoxes.size() - tUsed) + ", " + LH.get("gtsm.chat.locked", "已锁定") + ": " + tLocked + ")");
+                aChatReturn.add((mRangeEnabled ? LH.get("gtsm.chat.range.custom", "自定义范围") : LH.get("gtsm.chat.range.default", "默认范围")) + ": (" + rangeMinX() + ", " + rangeMinY() + ", " + rangeMinZ() + ") - (" + rangeMaxX() + ", " + rangeMaxY() + ", " + rangeMaxZ() + ")  " + LH.get("gtsm.chat.radius", "半径") + ": " + effectiveRadius() + "  " + LH.get("gtsm.chat.offset", "偏移") + ": (" + (mRangeEnabled ? mOffsetX : 0) + ", " + (mRangeEnabled ? mOffsetY : 0) + ", " + (mRangeEnabled ? mOffsetZ : 0) + ")");
+                aChatReturn.add(LH.get("gtsm.chat.oredict", "矿物词典统一") + ": " + Config.oreDictUnify + "  " + LH.get("gtsm.chat.fill", "填充空桶") + ": " + mFillEmptyBoxes);
             }
             return 1;
         }
@@ -552,10 +552,10 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
 
     @Override
     public void addToolTips(List<String> aList, ItemStack aStack, boolean aF3_H) {
-        aList.add(LH.Chat.CYAN + LH.get("gtsm.tooltip.1", "Manages GT6 Storage Boxes in range and exposes one unified Automation Interface"));
-        aList.add(LH.Chat.GRAY + LH.get("gtsm.tooltip.2", "Rightclick to insert held Itemstack, Sneak-Rightclick to insert all matching Stacks"));
-        aList.add(LH.Chat.DGRAY + LH.get("gtsm.tooltip.3", "Screwdriver: toggle filling empty Boxes | Soft Hammer: rescan | Magnifying Glass: details"));
-        aList.add(LH.Chat.DGRAY + LH.get("gtsm.tooltip.4", "Rightclick with empty hand to open Range Configuration"));
+        aList.add(LH.Chat.CYAN + LH.get("gtsm.tooltip.1", "管理范围内的GT6储物箱，并暴露统一的自动化接口"));
+        aList.add(LH.Chat.GRAY + LH.get("gtsm.tooltip.2", "右键：插入手中物品 | 潜行+右键：插入所有匹配物品"));
+        aList.add(LH.Chat.DGRAY + LH.get("gtsm.tooltip.3", "螺丝刀：切换是否填充空箱 | 软锤：重新扫描 | 放大镜：查看详情"));
+        aList.add(LH.Chat.DGRAY + LH.get("gtsm.tooltip.4", "空手右键：打开范围配置界面"));
     }
 
     // --------------------------------------------------------------

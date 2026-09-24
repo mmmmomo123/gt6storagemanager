@@ -149,7 +149,7 @@ public final class StorageManager_Mod extends Abstract_Mod {
         // GT6 电路阶梯：[0]Primitive [1]Basic(基础) [2]Good(低级) [3]Advanced [4]Elite [5]Master [6]Ultimate(究极)
         // 需求：排除基础/低级，接受 t3+（高级/精英/大师/究极），共 4 种
         int[] tCircuitIDs = {3, 4, 5, 6};
-        ItemStack tSelf = tRegistry.add("Storage Manager", "Storage", MTE_ID, 0, TileEntityStorageManager.class, 0, 16, tBlock,
+        ItemStack tSelf = tRegistry.add("储物桶管理器", "储物桶", MTE_ID, 0, TileEntityStorageManager.class, 0, 16, tBlock,
                 UT.NBT.make(CS.NBT_TEXTURE, TEXTURE_NAME, CS.NBT_HARDNESS, 6.0F, CS.NBT_RESISTANCE, 6.0F),
                 "PCP", "BDB", "PCP",
                 'P', OP.plate.dat(MT.Al),
