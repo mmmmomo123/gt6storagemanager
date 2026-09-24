@@ -66,6 +66,13 @@ public final class StorageManager_Mod extends Abstract_Mod {
     @Override public String getModNameForLog() {return "StorageManager";}
     @Override public Abstract_Proxy getProxy() {return PROXY;}
 
+    // Abstract_Mod 的其余抽象方法：本 mod 无对应逻辑，空实现即可
+    @Override public void onModPostInit2(FMLPostInitializationEvent aEvent) {}
+    @Override public void onModServerStarting2(FMLServerStartingEvent aEvent) {}
+    @Override public void onModServerStarted2(FMLServerStartedEvent aEvent) {}
+    @Override public void onModServerStopping2(FMLServerStoppingEvent aEvent) {}
+    @Override public void onModServerStopped2(FMLServerStoppedEvent aEvent) {}
+
     // 这 7 个方法保持原样，只做事件转发
     @Mod.EventHandler public final void onPreLoad       (FMLPreInitializationEvent   aEvent) {onModPreInit(aEvent);}
     @Mod.EventHandler public final void onLoad          (FMLInitializationEvent      aEvent) {onModInit(aEvent);}

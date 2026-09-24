@@ -85,3 +85,14 @@ afterEvaluate {
         }
     }
 }
+
+// 外部 Mod API 桩类（AE2/IC2/BC/CoFH/NEI/Mekanism）仅用于编译期解析 GT6 继承链，
+// 不打进产物 jar：运行时由真实 Mod 提供。
+jar {
+    exclude 'appeng/**'
+    exclude 'ic2/**'
+    exclude 'buildcraft/**'
+    exclude 'cofh/**'
+    exclude 'codechicken/**'
+    exclude 'mekanism/**'
+}

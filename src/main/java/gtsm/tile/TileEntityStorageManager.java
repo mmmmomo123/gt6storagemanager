@@ -65,7 +65,10 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
     /** 储物桶贴图容器（由 GT6 的 GT_API.sBlockIconload 在客户端自动注册） */
     public static IIconContainer ICON_STORAGE_MANAGER = new IIconContainer() {
         private IIcon mIcon;
-        { if (GT_API.sBlockIconload != null) GT_API.sBlockIconload.add(this); } // 注册到客户端贴图加载队列
+        // 6.17.06 起 sBlockIconload 是 Set<Runnable>，IIconContainer 不再继承 Runnable
+        { if (GT_API.sBlockIconload != null) GT_API.sBlockIconload.add(new Runnable() {
+            @Override public void run() { registerIcons(GT_API.sBlockIcons); }
+        }); }
 
         @Override public IIcon getIcon(int aRenderPass) { return mIcon; }
         @Override public short[] getIconColor(int aRenderPass) { return UNCOLOURED; }
@@ -73,7 +76,6 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
         @Override public boolean isUsingColorModulation(int aRenderPass) { return T; }
         @Override public ResourceLocation getTextureFile() { return TextureMap.locationBlocksTexture; }
         @Override public void registerIcons(IIconRegister aIconRegister) { mIcon = aIconRegister.registerIcon(StorageManager_Mod.MOD_ID + ":" + StorageManager_Mod.TEXTURE_NAME); }
-        @Override public void run() { registerIcons(GT_API.sBlockIcons); }
     };
 
     /** 当前管理的储物桶列表（列表下标 i 对应幻影槽 SLOT_BOX_BASE + i） */
@@ -455,7 +457,7 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
     }
 
     @Override
-    public float getExplosionResistance2() {
+    public float getExplosionResistance() {
         return mResistance;
     }
 
