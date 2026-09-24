@@ -12,7 +12,7 @@ public class Config {
     /** GUI 中偏移量可调上限（正负对称） */
     public static int maxOffset = 32;
     /** 最多同时管理的储物桶数量 */
-    public static int maxBoxes = 26;
+    public static int maxBoxes = 64;
     /** 是否允许把新品种物品自动放进空储物桶 */
     public static boolean fillEmptyBoxes = true;
     /** 插入时是否走 GT6 矿物词典统一 */

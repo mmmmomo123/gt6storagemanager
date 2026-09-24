@@ -86,7 +86,7 @@ GT6 的 release jar 是 **SRG 混淆**的（里面调 Minecraft 方法用的是 
 | 键 | 默认 | 说明 |
 |---|---|---|
 | `scanRadius` | 1 | 扫描半径，1~8（1 = 仅相邻 26 格） |
-| `maxBoxes` | 26 | 最多同时管理的储物桶数量 |
+| `maxBoxes` | 64 | 最多同时管理的储物桶数量（1~256） |
 | `fillEmptyBoxes` | true | 是否允许把新品种物品自动放进空储物桶 |
 | `oreDictUnify` | true | 插入时是否走矿物词典统一 |
 
