@@ -154,7 +154,7 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
         int tIndex = aSlot - SLOT_BOX_BASE;
         if (tIndex >= mBoxes.size()) return null;
         MultiTileEntityMassStorage tBox = mBoxes.get(tIndex);
-        if (tBox == null || ((TileEntity) tBox).isDead) { // isDead 是 MC 字段 → 强转原版类型后直接读字段
+        if (tBox == null || tBox.mIsDead) { // mIsDead 是 GT6 自有公开字段（不参与混淆）
             mNeedsRescan = T;
             return null;
         }
