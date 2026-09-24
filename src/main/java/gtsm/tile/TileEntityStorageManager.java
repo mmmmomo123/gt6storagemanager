@@ -5,6 +5,7 @@ import appeng.util.inv.IInventoryWrapper;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_AddToolTips;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_GetBlockHardness;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_GetComparatorInputOverride;
+import gregapi.block.multitileentity.IMultiTileEntity.IMTE_GetItemName;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_OnRegistrationFirstClient;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_GetExplosionResistance;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_OnToolClick;
@@ -56,7 +57,7 @@ import static gregapi.data.CS.*;
 public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
         implements IInventory, ISidedInventory, IMTE_OnToolClick, IMTE_AddToolTips,
                    IMTE_GetBlockHardness, IMTE_GetExplosionResistance, IMTE_GetComparatorInputOverride,
-                   IInventoryWrapper, IMTE_OnRegistrationFirstClient {
+                   IInventoryWrapper, IMTE_OnRegistrationFirstClient, IMTE_GetItemName {
 
     /** 通用路由槽的下标 */
     public static final int SLOT_ROUTER = 0;
@@ -108,6 +109,12 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
     @Override
     public String getTileEntityName() {
         return "gtsm.storage.manager"; // 不能以 "gt." 开头（GT6 保留）
+    }
+
+    /** 物品显示名直接由代码返回中文（不依赖 lang 加载，确保任何 locale 都显示中文） */
+    @Override
+    public String getItemName(ItemStack aStack, String aDefaultName) {
+        return "储物桶管理器";
     }
 
     @Override

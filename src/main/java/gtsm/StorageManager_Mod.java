@@ -125,15 +125,15 @@ public final class StorageManager_Mod extends Abstract_Mod {
         gtsm.network.GTSM_Network.init();
         cpw.mods.fml.common.network.NetworkRegistry.INSTANCE.registerGuiHandler(instance, new gtsm.gui.GTSM_GuiHandler());
 
-        // ---------- MultiTileEntity 注册表与方块（必须在 PreInit） ----------
+        // ---------- MultiTileEntity 注册表（必须在 PreInit） ----------
+        // 注意：不自己 getOrCreate 机器方块（旧存档中新块 ID 不稳定）；
+        // MTE 在 Init 阶段注册到 GT6 的机器方块上（见 onModInit2）。
         new MultiTileEntityRegistry(REGISTRY_NAME);
-        MultiTileEntityBlock.getOrCreate(MOD_ID, "machine", MaterialMachines.instance, Block.soundTypeMetal, CS.TOOL_wrench, 0, 0, 15, F, F);
     }
 
     @Override
     public void onModInit2(FMLInitializationEvent aEvent) {
         MultiTileEntityRegistry tRegistry = MultiTileEntityRegistry.getRegistry(REGISTRY_NAME);
-        MultiTileEntityBlock tBlock = MultiTileEntityBlock.getOrCreate(MOD_ID, "machine", MaterialMachines.instance, Block.soundTypeMetal, CS.TOOL_wrench, 0, 0, 15, F, F);
 
         // 配方材料（GT6 6.17.06，单一 MTE 注册表 "gt.multitileentity"）
         MultiTileEntityRegistry tGT = MultiTileEntityRegistry.getRegistry("gt.multitileentity");
@@ -149,7 +149,12 @@ public final class StorageManager_Mod extends Abstract_Mod {
         // GT6 电路阶梯：[0]Primitive [1]Basic(基础) [2]Good(低级) [3]Advanced [4]Elite [5]Master [6]Ultimate(究极)
         // 需求：排除基础/低级，接受 t3+（高级/精英/大师/究极），共 4 种
         int[] tCircuitIDs = {3, 4, 5, 6};
-        ItemStack tSelf = tRegistry.add("储物桶管理器", "储物桶", MTE_ID, 0, TileEntityStorageManager.class, 0, 16, tBlock,
+        // 关键：把 MTE 注册到【GT6 自己的机器方块】上（参数与 GT6 完全一致，getOrCreate 会返回既有块）。
+        // 不要用本 mod 自建的 getOrCreate 块——在世界创建本 mod 之前存在的旧存档里，
+        // 新块的 ID 不在世界 ID 映射表中，每次启动会被重新分配，导致放置的方块重进游戏变空气。
+        // GT6 的机器方块从世界创建起就在映射表里(ID 1100)，永久稳定。
+        MultiTileEntityBlock tStableBlock = MultiTileEntityBlock.getOrCreate("gregtech", "machine", MaterialMachines.instance, Block.soundTypeMetal, CS.TOOL_wrench, 0, 0, 15, F, F);
+        ItemStack tSelf = tRegistry.add("储物桶管理器", "储物桶", MTE_ID, 0, TileEntityStorageManager.class, 0, 16, tStableBlock,
                 UT.NBT.make(CS.NBT_TEXTURE, TEXTURE_NAME, CS.NBT_HARDNESS, 6.0F, CS.NBT_RESISTANCE, 6.0F),
                 "PCP", "BDB", "PCP",
                 'P', OP.plate.dat(MT.Al),
@@ -164,7 +169,7 @@ public final class StorageManager_Mod extends Abstract_Mod {
                     'D', tInserter);
         }
         System.out.println("[GTSM] mTE " + MTE_ID + " registered in registry '" + REGISTRY_NAME
-                + "' on block '" + tBlock.getUnlocalizedName()
+                + "' on block '" + tStableBlock.getUnlocalizedName()
                 + "' | item=" + (tSelf == null ? "FAILED" : tSelf.getDisplayName()));
     }
 }
