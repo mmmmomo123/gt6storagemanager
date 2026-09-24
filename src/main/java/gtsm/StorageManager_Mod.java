@@ -43,7 +43,7 @@ public final class StorageManager_Mod extends Abstract_Mod {
     /** Mod-ID 必须全小写、无空格（vanilla 资源包限制） */
     public static final String MOD_ID = "gtsm";
     public static final String MOD_NAME = "GT6 Storage Manager";
-    public static final String VERSION = "1.0.4";
+    public static final String VERSION = "1.0.5";
 
     /** GT 的 ModData 对象 */
     public static final ModData MOD_DATA = new ModData(MOD_ID, MOD_NAME);
@@ -125,10 +125,10 @@ public final class StorageManager_Mod extends Abstract_Mod {
         gtsm.network.GTSM_Network.init();
         cpw.mods.fml.common.network.NetworkRegistry.INSTANCE.registerGuiHandler(instance, new gtsm.gui.GTSM_GuiHandler());
 
-        // ---------- MultiTileEntity 注册表（必须在 PreInit） ----------
-        // 注意：不自己 getOrCreate 机器方块（旧存档中新块 ID 不稳定）；
-        // MTE 在 Init 阶段注册到 GT6 的机器方块上（见 onModInit2）。
+        // ---------- MultiTileEntity 注册表与方块（必须在 PreInit） ----------
+        // 注意：GT6 强制 MTE 方块只能在 preInit 创建（IllegalStateException），Init 里只能取回/注册 MTE
         new MultiTileEntityRegistry(REGISTRY_NAME);
+        MultiTileEntityBlock.getOrCreate(MOD_ID, "machine", MaterialMachines.instance, Block.soundTypeMetal, CS.TOOL_wrench, 0, 0, 15, F, F);
     }
 
     @Override
