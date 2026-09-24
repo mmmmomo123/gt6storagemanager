@@ -1,21 +1,27 @@
 # GT6 Storage Manager
-item.gtsm.multitileentity.1.name=Storage Manager
-gtsm.multitileentity.1=Storage Manager
-gtsm.multitileentity.0=Storage Manager
-gtsm.storage.manager=Storage Manager
+# 注：本整合包为中文包，en_us 也输出中文（默认语言不改变用户体验）
+item.gtsm.multitileentity.1.name=储物桶管理器
+gtsm.multitileentity.1=储物桶管理器
+gtsm.multitileentity.0=储物桶管理器
+gtsm.storage.manager=储物桶管理器
 
-gtsm.tooltip.1=Manages GT6 Storage Boxes in range and exposes one unified Automation Interface
-gtsm.tooltip.2=Rightclick to insert held Itemstack, Sneak-Rightclick to insert all matching Stacks
-gtsm.tooltip.3=Screwdriver: toggle filling empty Boxes | Soft Hammer: rescan | Magnifying Glass: details
+gtsm.tooltip.1=管理范围内的GT6储物箱，并暴露统一的自动化接口
+gtsm.tooltip.2=右键：插入手中物品 | 潜行+右键：插入所有匹配物品
+gtsm.tooltip.3=螺丝刀：切换是否填充空箱 | 软锤：重新扫描 | 放大镜：查看详情
+gtsm.tooltip.4=空手右键：打开范围配置界面
 
-gtsm.chat.fill.on=Will fill empty Storage Boxes with new Item Types
-gtsm.chat.fill.off=Won't fill empty Storage Boxes with new Item Types
-gtsm.chat.rescan=Rescanned Area, found
-gtsm.chat.boxes=Storage Boxes
-gtsm.chat.scope=Storage Boxes
-gtsm.chat.used=in use
-gtsm.chat.empty=empty
-gtsm.chat.locked=locked
-gtsm.chat.range=Range
-gtsm.chat.oredict=OreDict Unify
-gtsm.chat.fill=Fill Empty
+gtsm.chat.fill.on=将允许把新品种物品放入空储物桶
+gtsm.chat.fill.off=将不会占用空储物桶
+gtsm.chat.rescan=已重新扫描区域，找到
+gtsm.chat.boxes=个储物桶
+gtsm.chat.scope=储物桶
+gtsm.chat.used=已占用
+gtsm.chat.empty=空闲
+gtsm.chat.locked=已锁定
+gtsm.chat.range=范围
+gtsm.chat.radius=半径
+gtsm.chat.offset=偏移
+gtsm.chat.range.custom=自定义范围
+gtsm.chat.range.default=默认范围
+gtsm.chat.oredict=矿物词典统一
+gtsm.chat.fill=填充空桶

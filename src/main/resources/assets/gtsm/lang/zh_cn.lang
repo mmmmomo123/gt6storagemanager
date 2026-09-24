@@ -8,9 +8,10 @@ gtsm.multitileentity.0=储物桶管理器
 gtsm.storage.manager=储物桶管理器
 
 # 物品提示
-gtsm.tooltip.1=管理范围内的 GT6 储物桶，对外提供一个统一的自动化接口
-gtsm.tooltip.2=右键放入手中物品，潜行右键放入背包内全部同品种物品
-gtsm.tooltip.3=螺丝刀：切换是否填充空桶 | 软锤：重新扫描 | 放大镜：查看详情
+gtsm.tooltip.1=管理范围内的GT6储物箱，并暴露统一的自动化接口
+gtsm.tooltip.2=右键：插入手中物品 | 潜行+右键：插入所有匹配物品
+gtsm.tooltip.3=螺丝刀：切换是否填充空箱 | 软锤：重新扫描 | 放大镜：查看详情
+gtsm.tooltip.4=空手右键：打开范围配置界面
 
 # 工具交互聊天信息
 gtsm.chat.fill.on=将允许把新品种物品放入空储物桶
@@ -21,6 +22,10 @@ gtsm.chat.scope=储物桶
 gtsm.chat.used=已占用
 gtsm.chat.empty=空闲
 gtsm.chat.locked=已锁定
-gtsm.chat.range=扫描半径
+gtsm.chat.range=范围
+gtsm.chat.radius=半径
+gtsm.chat.offset=偏移
+gtsm.chat.range.custom=自定义范围
+gtsm.chat.range.default=默认范围
 gtsm.chat.oredict=矿物词典统一
 gtsm.chat.fill=填充空桶

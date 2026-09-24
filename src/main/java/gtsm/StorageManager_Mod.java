@@ -99,27 +99,27 @@ public final class StorageManager_Mod extends Abstract_Mod {
         Config.oreDictUnify   = tConfig.getBoolean("oreDictUnify",  "general", true,    "插入时走 GT6 的矿物词典统一（和 GT6 设备一致）");
         if (tConfig.hasChanged()) tConfig.save();
 
-        // ---------- 本地化默认值（英文 fallback，lang 文件优先于这里） ----------
-        LH.add("gtsm.storage.manager", "Storage Manager");
-        LH.add("gtsm.tooltip.1", "Manages GT6 Storage Boxes in range and exposes one unified Automation Interface");
-        LH.add("gtsm.tooltip.2", "Rightclick to insert held Itemstack, Sneak-Rightclick to insert all matching Stacks");
-        LH.add("gtsm.tooltip.3", "Screwdriver: toggle filling empty Boxes | Soft Hammer: rescan | Magnifying Glass: details");
-        LH.add("gtsm.chat.fill.on", "Will fill empty Storage Boxes with new Item Types");
-        LH.add("gtsm.chat.fill.off", "Won't fill empty Storage Boxes with new Item Types");
-        LH.add("gtsm.chat.rescan", "Rescanned Area, found");
-        LH.add("gtsm.chat.boxes", "Storage Boxes");
-        LH.add("gtsm.chat.scope", "Storage Boxes");
-        LH.add("gtsm.chat.used", "in use");
-        LH.add("gtsm.chat.empty", "empty");
-        LH.add("gtsm.chat.locked", "locked");
-        LH.add("gtsm.chat.range", "Range");
-        LH.add("gtsm.chat.radius", "Radius");
-        LH.add("gtsm.chat.offset", "Offset");
-        LH.add("gtsm.chat.range.custom", "Custom Range");
-        LH.add("gtsm.chat.range.default", "Default Range");
-        LH.add("gtsm.tooltip.4", "Rightclick with empty hand to open Range Configuration");
-        LH.add("gtsm.chat.oredict", "OreDict Unify");
-        LH.add("gtsm.chat.fill", "Fill Empty");
+        // ---------- 本地化默认值（中文；zh_cn/en_us lang 文件可覆盖） ----------
+        LH.add("gtsm.storage.manager", "储物管理器");
+        LH.add("gtsm.tooltip.1", "管理范围内的GT6储物箱，并暴露统一的自动化接口");
+        LH.add("gtsm.tooltip.2", "右键：插入手中物品 | 潜行+右键：插入所有匹配物品");
+        LH.add("gtsm.tooltip.3", "螺丝刀：切换是否填充空箱 | 软锤：重新扫描 | 放大镜：查看详情");
+        LH.add("gtsm.tooltip.4", "空手右键：打开范围配置界面");
+        LH.add("gtsm.chat.fill.on", "将允许把新品种物品放入空储物桶");
+        LH.add("gtsm.chat.fill.off", "将不会占用空储物桶");
+        LH.add("gtsm.chat.rescan", "已重新扫描区域，找到");
+        LH.add("gtsm.chat.boxes", "个储物桶");
+        LH.add("gtsm.chat.scope", "储物桶");
+        LH.add("gtsm.chat.used", "已占用");
+        LH.add("gtsm.chat.empty", "空闲");
+        LH.add("gtsm.chat.locked", "已锁定");
+        LH.add("gtsm.chat.range", "范围");
+        LH.add("gtsm.chat.radius", "半径");
+        LH.add("gtsm.chat.offset", "偏移");
+        LH.add("gtsm.chat.range.custom", "自定义范围");
+        LH.add("gtsm.chat.range.default", "默认范围");
+        LH.add("gtsm.chat.oredict", "矿物词典统一");
+        LH.add("gtsm.chat.fill", "填充空桶");
 
         // ---------- 网络通道与 GUI 路由 ----------
         gtsm.network.GTSM_Network.init();
