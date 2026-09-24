@@ -19,9 +19,12 @@ import gregapi.data.CS;
 import gregapi.data.LH;
 import gregapi.data.MT;
 import gregapi.data.OP;
+import gregapi.util.CR;
+import gregapi.util.ST;
 import gregapi.util.UT;
 import gtsm.tile.TileEntityStorageManager;
 import net.minecraft.block.Block;
+import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.config.Configuration;
 
 import static gregapi.data.CS.*;
@@ -48,6 +51,9 @@ public final class StorageManager_Mod extends Abstract_Mod {
     /** MultiTileEntity 注册表名称与方块内 ID */
     public static final String REGISTRY_NAME = MOD_ID + ".multitileentity";
     public static final int MTE_ID = 1;
+
+    /** 范围控制 GUI 的 id（见 gtsm.gui.GTSM_GuiHandler） */
+    public static final int GUI_ID_RANGE = 0;
 
     /** 方块贴图名（对应 assets/gtsm/textures/blocks/machine_storage_manager.png） */
     public static final String TEXTURE_NAME = "machine_storage_manager";
@@ -107,8 +113,17 @@ public final class StorageManager_Mod extends Abstract_Mod {
         LH.add("gtsm.chat.empty", "empty");
         LH.add("gtsm.chat.locked", "locked");
         LH.add("gtsm.chat.range", "Range");
+        LH.add("gtsm.chat.radius", "Radius");
+        LH.add("gtsm.chat.offset", "Offset");
+        LH.add("gtsm.chat.range.custom", "Custom Range");
+        LH.add("gtsm.chat.range.default", "Default Range");
+        LH.add("gtsm.tooltip.4", "Rightclick with empty hand to open Range Configuration");
         LH.add("gtsm.chat.oredict", "OreDict Unify");
         LH.add("gtsm.chat.fill", "Fill Empty");
+
+        // ---------- 网络通道与 GUI 路由 ----------
+        gtsm.network.GTSM_Network.init();
+        cpw.mods.fml.common.network.NetworkRegistry.INSTANCE.registerGuiHandler(instance, new gtsm.gui.GTSM_GuiHandler());
 
         // ---------- MultiTileEntity 注册表与方块（必须在 PreInit） ----------
         new MultiTileEntityRegistry(REGISTRY_NAME);
@@ -120,13 +135,31 @@ public final class StorageManager_Mod extends Abstract_Mod {
         MultiTileEntityRegistry tRegistry = MultiTileEntityRegistry.getRegistry(REGISTRY_NAME);
         MultiTileEntityBlock tBlock = MultiTileEntityBlock.getOrCreate(MOD_ID, "machine", MaterialMachines.instance, Block.soundTypeMetal, CS.TOOL_wrench, 0, 0, 15, F, F);
 
-        // 注册储物桶管理器。aLocalised 会作为英文默认名注册到 LH，lang 文件可覆盖。
-        tRegistry.add("Storage Manager", "Storage", MTE_ID, 0, TileEntityStorageManager.class, 0, 16, tBlock,
+        // 配方材料（GT6 6.17.06，单一 MTE 注册表 "gt.multitileentity"）
+        MultiTileEntityRegistry tGT = MultiTileEntityRegistry.getRegistry("gt.multitileentity");
+        ItemStack tInserter = tGT == null ? null : tGT.getItem(32751); // Storage Inserter（存储输入器）
+        ItemStack tPipe = OP.pipeMedium.dat(MT.Pt);                    // 铂物品管道（Platinum Item Pipe）
+
+        if (tInserter == null || !ST.valid(tInserter)) {
+            System.out.println("[GTSM] WARNING: Storage Inserter (mTE 32751) not found - recipe skipped (wrong GT6 version?)");
+            return;
+        }
+
+        // aca / bdb / aca —— a=铝板 b=t3以上电路 c=铂物品管道 d=存储输入器
+        // 电路从「高级电子电路」起(t3+)：注册时用 [2]，再补 3 份(数据/精英/大师)，共 4 种可用
+        ItemStack tSelf = tRegistry.add("Storage Manager", "Storage", MTE_ID, 0, TileEntityStorageManager.class, 0, 16, tBlock,
                 UT.NBT.make(CS.NBT_TEXTURE, TEXTURE_NAME, CS.NBT_HARDNESS, 6.0F, CS.NBT_RESISTANCE, 6.0F),
-                "PPP", "CMC", "SSS",
-                'P', OP.plate.dat(MT.Steel),
-                'C', MT.DATA.CIRCUITS[0],
-                'M', OP.casingMachine.dat(MT.Steel),
-                'S', OP.stick.dat(MT.Steel));
+                "PCP", "BDB", "PCP",
+                'P', OP.plate.dat(MT.Al),
+                'C', tPipe,
+                'B', MT.DATA.CIRCUITS[2],
+                'D', tInserter);
+        for (int i = 3; i <= 5 && i < MT.DATA.CIRCUITS.length; i++) {
+            CR.shaped(tSelf, CR.DEF, "PCP", "BDB", "PCP",
+                    'P', OP.plate.dat(MT.Al),
+                    'C', tPipe,
+                    'B', MT.DATA.CIRCUITS[i],
+                    'D', tInserter);
+        }
     }
 }

@@ -87,6 +87,16 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
     private boolean mFillEmptyBoxes = Config.fillEmptyBoxes;
     private float mHardness = 6.0F, mResistance = 6.0F;
 
+    // ---- 范围控制（GUI 设置，持久化于 NBT，随区块加载恢复） ----
+    /** 扫描中心偏移（相对管理器自身） */
+    private int mOffsetX = 0, mOffsetY = 0, mOffsetZ = 0;
+    /** 扫描半径（各轴一致） */
+    private int mRadius = Config.scanRadius;
+    /** 是否启用自定义范围（关闭则回退默认：自身 ±scanRadius 立方体） */
+    private boolean mRangeEnabled = T;
+    /** 是否在大世界绘制范围框 */
+    private boolean mShowFrame = T;
+
     /** 上次比较器输出，用于检测变化时刷新红石（避免每 tick 刷方块更新） */
     private int mLastComparatorOutput = -1;
 
@@ -105,6 +115,12 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
         if (aNBT.hasKey(NBT_HARDNESS)) mHardness = aNBT.getFloat(NBT_HARDNESS);
         if (aNBT.hasKey(NBT_RESISTANCE)) mResistance = aNBT.getFloat(NBT_RESISTANCE);
         if (aNBT.hasKey("gtsm.fillEmpty")) mFillEmptyBoxes = aNBT.getBoolean("gtsm.fillEmpty");
+        if (aNBT.hasKey("gtsm.offX")) mOffsetX = aNBT.getInteger("gtsm.offX");
+        if (aNBT.hasKey("gtsm.offY")) mOffsetY = aNBT.getInteger("gtsm.offY");
+        if (aNBT.hasKey("gtsm.offZ")) mOffsetZ = aNBT.getInteger("gtsm.offZ");
+        if (aNBT.hasKey("gtsm.radius")) mRadius = aNBT.getInteger("gtsm.radius");
+        mRangeEnabled = !aNBT.hasKey("gtsm.rangeEnabled") || aNBT.getBoolean("gtsm.rangeEnabled");
+        mShowFrame = !aNBT.hasKey("gtsm.showFrame") || aNBT.getBoolean("gtsm.showFrame");
         mNeedsRescan = T;
     }
 
@@ -112,28 +128,86 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
     public void writeToNBT2(NBTTagCompound aNBT) {
         super.writeToNBT2(aNBT);
         aNBT.setBoolean("gtsm.fillEmpty", mFillEmptyBoxes);
+        aNBT.setInteger("gtsm.offX", mOffsetX);
+        aNBT.setInteger("gtsm.offY", mOffsetY);
+        aNBT.setInteger("gtsm.offZ", mOffsetZ);
+        aNBT.setInteger("gtsm.radius", mRadius);
+        aNBT.setBoolean("gtsm.rangeEnabled", mRangeEnabled);
+        aNBT.setBoolean("gtsm.showFrame", mShowFrame);
     }
 
-    /** 无 GUI、无客户端同步需求，直接返回 null（onTickCheck 默认 false，不会被调用） */
+    /** 无 GUI 数据包需求（范围数据走自定义 GTSM 网络包），直接返回 null */
     @Override
     public IPacket getClientDataPacket(boolean aSendAll) {
         return null;
     }
 
     // --------------------------------------------------------------
+    //  范围控制（GUI）
+    // --------------------------------------------------------------
+
+    /** GUI 控制项 id，与 PacketRangeChange.guiId 对应 */
+    public static final byte GUI_OFF_X_INC = 0, GUI_OFF_X_DEC = 1, GUI_OFF_Y_INC = 2, GUI_OFF_Y_DEC = 3,
+                           GUI_OFF_Z_INC = 4, GUI_OFF_Z_DEC = 5, GUI_RADIUS_DEC = 6, GUI_RADIUS_INC = 7,
+                           GUI_TOGGLE_RANGE = 8, GUI_TOGGLE_FRAME = 9;
+
+    /**
+     * 应用 GUI 操作（服务端）。值一律传绝对值；开关类用 value != 0 表示目标状态。
+     */
+    public void handleGuiAction(byte aGuiId, int aValue) {
+        switch (aGuiId) {
+            case GUI_OFF_X_INC: case GUI_OFF_X_DEC: mOffsetX = clampOffset(aValue); break;
+            case GUI_OFF_Y_INC: case GUI_OFF_Y_DEC: mOffsetY = clampOffset(aValue); break;
+            case GUI_OFF_Z_INC: case GUI_OFF_Z_DEC: mOffsetZ = clampOffset(aValue); break;
+            case GUI_RADIUS_INC: case GUI_RADIUS_DEC: mRadius = clampRadius(aValue); break;
+            case GUI_TOGGLE_RANGE: mRangeEnabled = aValue != 0; break;
+            case GUI_TOGGLE_FRAME: mShowFrame = aValue != 0; break;
+            default: return;
+        }
+        mNeedsRescan = T;
+        broadcastRange();
+    }
+
+    private static int clampOffset(int aValue) { return Math.max(-Config.maxOffset, Math.min(Config.maxOffset, aValue)); }
+    private static int clampRadius(int aValue) { return Math.max(0, Math.min(Config.maxRadius, aValue)); }
+
+    /** 生效范围（闭区间，方块坐标）；禁用自定义范围时回退到默认立方体 */
+    public int rangeMinX() { return xCoord + (mRangeEnabled ? mOffsetX : 0) - effectiveRadius(); }
+    public int rangeMinY() { return yCoord + (mRangeEnabled ? mOffsetY : 0) - effectiveRadius(); }
+    public int rangeMinZ() { return zCoord + (mRangeEnabled ? mOffsetZ : 0) - effectiveRadius(); }
+    public int rangeMaxX() { return xCoord + (mRangeEnabled ? mOffsetX : 0) + effectiveRadius(); }
+    public int rangeMaxY() { return yCoord + (mRangeEnabled ? mOffsetY : 0) + effectiveRadius(); }
+    public int rangeMaxZ() { return zCoord + (mRangeEnabled ? mOffsetZ : 0) + effectiveRadius(); }
+    public int effectiveRadius() { return mRangeEnabled ? mRadius : Config.scanRadius; }
+
+    /** 立即把本管理器的范围数据同步给 64 格内的玩家（GUI/画框数据源） */
+    public void broadcastRange() {
+        if (worldObj == null || worldObj.isRemote) return;
+        for (int i = 0; i < worldObj.playerEntities.size(); i++) {
+            Object tPlayer = worldObj.playerEntities.get(i);
+            if (!(tPlayer instanceof EntityPlayer)) continue;
+            EntityPlayer tEntityPlayer = (EntityPlayer) tPlayer;
+            double dX = tEntityPlayer.posX - xCoord, dY = tEntityPlayer.posY - yCoord, dZ = tEntityPlayer.posZ - zCoord;
+            if (dX*dX + dY*dY + dZ*dZ > 64.0D * 64.0D) continue;
+            gtsm.network.GTSM_Network.WRAPPER.sendTo(new gtsm.network.PacketRangeSync(xCoord, yCoord, zCoord, mOffsetX, mOffsetY, mOffsetZ, effectiveRadius(), mRangeEnabled, mShowFrame), (cpw.mods.fml.common.player.Player) tPlayer);
+        }
+    }
+
+    // --------------------------------------------------------------
     //  扫描
     // --------------------------------------------------------------
 
-    /** 重新扫描范围内的储物桶。在服务端运行；客户端只有渲染需要，不扫描也不会出错 */
+    /** 重新扫描生效范围内的储物桶（轴对齐盒）。服务端执行 */
     private void rescan() {
         mBoxes.clear();
         if (worldObj == null) return;
-        int tRadius = Config.scanRadius;
-        for (int tX = -tRadius; tX <= tRadius; tX++)
-            for (int tY = -tRadius; tY <= tRadius; tY++)
-                for (int tZ = -tRadius; tZ <= tRadius; tZ++) {
-                    if (tX == 0 && tY == 0 && tZ == 0) continue; // 跳过自己
-                    Object tTileEntity = worldObj.getTileEntity(xCoord + tX, yCoord + tY, zCoord + tZ);
+        int tMinX = rangeMinX(), tMinY = rangeMinY(), tMinZ = rangeMinZ();
+        int tMaxX = rangeMaxX(), tMaxY = rangeMaxY(), tMaxZ = rangeMaxZ();
+        for (int tX = tMinX; tX <= tMaxX; tX++)
+            for (int tY = tMinY; tY <= tMaxY; tY++)
+                for (int tZ = tMinZ; tZ <= tMaxZ; tZ++) {
+                    if (tX == xCoord && tY == yCoord && tZ == zCoord) continue; // 跳过自己
+                    Object tTileEntity = worldObj.getTileEntity(tX, tY, tZ);
                     if (tTileEntity instanceof MultiTileEntityMassStorage) {
                         mBoxes.add((MultiTileEntityMassStorage) tTileEntity);
                         if (mBoxes.size() >= Config.maxBoxes) return;
@@ -195,6 +269,23 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
             }
         }
         return aStack;
+    }
+
+    /** 路由槽准入判断：范围内是否有桶能接收该物品（同品种桶 或 允许时空桶） */
+    private boolean canRouteInsert(ItemStack aStack) {
+        ensureValid();
+        for (MultiTileEntityMassStorage tBox : mBoxes) {
+            if (isTaped(tBox)) continue;
+            if (!tBox.slotHas(1)) { if (mFillEmptyBoxes) return T; continue; }
+            if (ST.equal(tBox.slot(1), aStack)) return T;
+        }
+        return F;
+    }
+
+    /** 兜底：实在放不下的剩余物品掉落为实体（绝不静默删除） */
+    private void dropLeftover(ItemStack aStack) {
+        if (!ST.valid(aStack) || worldObj == null) return;
+        ST.drop(worldObj, getCoords(), aStack.copy());
     }
 
     /**
@@ -262,12 +353,12 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
     @Override
     public void setInventorySlotContents(int aSlot, ItemStack aStack) {
         if (aSlot == SLOT_ROUTER) {
-            routeInsert(aStack); // 路由槽：统一路由
+            dropLeftover(routeInsert(aStack)); // 路由槽：统一路由，剩余掉落
             return;
         }
         MultiTileEntityMassStorage tBox = box(aSlot);
         if (tBox == null) {
-            routeInsert(aStack); // 对应桶不存在，走路由兜底
+            dropLeftover(routeInsert(aStack)); // 对应桶不存在，走路由兜底，剩余掉落
             return;
         }
         ItemStack tCurrent = tBox.slot(1);
@@ -278,10 +369,10 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
             // 取出差值（GT6 官方 API；胶带锁定时返回 0，绝不复制物品）
             tBox.removeStackFromConnectedInventory((byte) 0, ST.amount(tNow - tTarget, tCurrent), F);
         } else {
-            // 放入差值
+            // 放入差值：优先本槽对应的桶，放不下再路由，仍放不下降落
             ItemStack tToAdd = ST.amount(tTarget - tNow, aStack);
             ItemStack tLeftover = insertIntoBox(tBox, tToAdd);
-            if (tLeftover != null) routeInsert(tLeftover);
+            if (tLeftover != null) dropLeftover(routeInsert(tLeftover));
         }
     }
 
@@ -318,10 +409,10 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
     @Override
     public boolean isItemValidForSlot(int aSlot, ItemStack aStack) {
         if (ST.invalid(aStack)) return F;
-        if (aSlot == SLOT_ROUTER) return T; // 路由槽收一切
+        if (aSlot == SLOT_ROUTER) return canRouteInsert(aStack); // 路由槽：仅当范围内确实有桶能收时才准入
         MultiTileEntityMassStorage tBox = box(aSlot);
         if (tBox == null || isTaped(tBox)) return F;
-        if (!tBox.slotHas(1)) return T; // 空桶接受任何东西
+        if (!tBox.slotHas(1)) return mFillEmptyBoxes; // 空桶按配置决定是否接受新品种
         return ST.equal(aStack, tBox.slot(1)); // 已有品种的桶只接受同品种
     }
 
@@ -364,7 +455,12 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
     public boolean onBlockActivated2(EntityPlayer aPlayer, byte aSide, float aHitX, float aHitY, float aHitZ) {
         if (!isServerSide() || aPlayer == null) return F;
         ItemStack tStack = aPlayer.getCurrentEquippedItem();
-        if (ST.invalid(tStack)) return F;
+        if (ST.invalid(tStack)) {
+            // 空手右键：打开范围控制 GUI
+            broadcastRange(); // 立刻同步一份，GUI 立即可读
+            aPlayer.openGui(gtsm.StorageManager_Mod.instance, gtsm.StorageManager_Mod.GUI_ID_RANGE, worldObj, xCoord, yCoord, zCoord);
+            return T;
+        }
 
         boolean rInserted = F;
         if (aPlayer.isSneaking()) {
@@ -429,7 +525,8 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
                 }
                 aChatReturn.add(LH.get("gtsm.storage.manager", "Storage Manager"));
                 aChatReturn.add(LH.get("gtsm.chat.scope", "Storage Boxes") + ": " + mBoxes.size() + " (" + LH.get("gtsm.chat.used", "in use") + ": " + tUsed + ", " + LH.get("gtsm.chat.empty", "empty") + ": " + (mBoxes.size() - tUsed) + ", " + LH.get("gtsm.chat.locked", "locked") + ": " + tLocked + ")");
-                aChatReturn.add(LH.get("gtsm.chat.range", "Range") + ": " + Config.scanRadius + "  " + LH.get("gtsm.chat.oredict", "OreDict Unify") + ": " + Config.oreDictUnify + "  " + LH.get("gtsm.chat.fill", "Fill Empty") + ": " + mFillEmptyBoxes);
+                aChatReturn.add((mRangeEnabled ? LH.get("gtsm.chat.range.custom", "Custom Range") : LH.get("gtsm.chat.range.default", "Default Range")) + ": (" + rangeMinX() + ", " + rangeMinY() + ", " + rangeMinZ() + ") - (" + rangeMaxX() + ", " + rangeMaxY() + ", " + rangeMaxZ() + ")  " + LH.get("gtsm.chat.radius", "Radius") + ": " + effectiveRadius() + "  " + LH.get("gtsm.chat.offset", "Offset") + ": (" + (mRangeEnabled ? mOffsetX : 0) + ", " + (mRangeEnabled ? mOffsetY : 0) + ", " + (mRangeEnabled ? mOffsetZ : 0) + ")");
+                aChatReturn.add(LH.get("gtsm.chat.oredict", "OreDict Unify") + ": " + Config.oreDictUnify + "  " + LH.get("gtsm.chat.fill", "Fill Empty") + ": " + mFillEmptyBoxes);
             }
             return 1;
         }
@@ -441,6 +538,7 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
         aList.add(LH.Chat.CYAN + LH.get("gtsm.tooltip.1", "Manages GT6 Storage Boxes in range and exposes one unified Automation Interface"));
         aList.add(LH.Chat.GRAY + LH.get("gtsm.tooltip.2", "Rightclick to insert held Itemstack, Sneak-Rightclick to insert all matching Stacks"));
         aList.add(LH.Chat.DGRAY + LH.get("gtsm.tooltip.3", "Screwdriver: toggle filling empty Boxes | Soft Hammer: rescan | Magnifying Glass: details"));
+        aList.add(LH.Chat.DGRAY + LH.get("gtsm.tooltip.4", "Rightclick with empty hand to open Range Configuration"));
     }
 
     // --------------------------------------------------------------
@@ -453,6 +551,10 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
         if (mNeedsRescan || aTimer % 256 == 0) {
             rescan();
             mNeedsRescan = F;
+        }
+        // 每 10 tick 向视野内玩家同步一次范围数据（GUI 镜像 + 画框）
+        if (aTimer % 10 == 0) {
+            broadcastRange();
         }
         // 比较器输出变化时刷新一次方块更新（相邻比较器/红石需要）
         int tOutput = getComparatorInputOverride((byte) 0);
