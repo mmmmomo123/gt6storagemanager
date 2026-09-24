@@ -6,6 +6,7 @@ import gregapi.block.multitileentity.IMultiTileEntity.IMTE_AddToolTips;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_GetBlockHardness;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_GetComparatorInputOverride;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_GetItemName;
+import gregapi.block.multitileentity.IMultiTileEntity.IMTE_RegisterIcons;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_OnRegistrationFirstClient;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_GetExplosionResistance;
 import gregapi.block.multitileentity.IMultiTileEntity.IMTE_OnToolClick;
@@ -57,7 +58,7 @@ import static gregapi.data.CS.*;
 public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
         implements IInventory, ISidedInventory, IMTE_OnToolClick, IMTE_AddToolTips,
                    IMTE_GetBlockHardness, IMTE_GetExplosionResistance, IMTE_GetComparatorInputOverride,
-                   IInventoryWrapper, IMTE_OnRegistrationFirstClient, IMTE_GetItemName {
+                   IInventoryWrapper, IMTE_OnRegistrationFirstClient, IMTE_GetItemName, IMTE_RegisterIcons {
 
     /** 通用路由槽的下标 */
     public static final int SLOT_ROUTER = 0;
@@ -66,13 +67,10 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
     /** 箱子 GUI/自动化里玩家与箱体的交互距离上限（原版常量） */
     private static final double USE_DISTANCE_SQ = 64.0D;
 
-    /** 储物桶贴图容器（由 GT6 的 GT_API.sBlockIconload 在客户端自动注册） */
+    /** 储物桶贴图容器。注册由 TextureStitchEvent 每缝触发（见 gtsm.client.IconStitchHandler），
+     *  不能用 GT_API.sBlockIconload 一次性队列——每次资源重载图集都会重建，只入队一次会失效导致方块隐形 */
     public static IIconContainer ICON_STORAGE_MANAGER = new IIconContainer() {
         private IIcon mIcon;
-        // 6.17.06 起 sBlockIconload 是 Set<Runnable>，IIconContainer 不再继承 Runnable
-        { if (GT_API.sBlockIconload != null) GT_API.sBlockIconload.add(new Runnable() {
-            @Override public void run() { registerIcons(GT_API.sBlockIcons); }
-        }); }
 
         @Override public IIcon getIcon(int aRenderPass) { return mIcon; }
         @Override public short[] getIconColor(int aRenderPass) { return UNCOLOURED; }
@@ -201,6 +199,13 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
     @cpw.mods.fml.relauncher.SideOnly(cpw.mods.fml.relauncher.Side.CLIENT)
     public void onRegistrationFirstClient(gregapi.block.multitileentity.MultiTileEntityRegistry aRegistry, short aID) {
         cpw.mods.fml.client.registry.ClientRegistry.bindTileEntitySpecialRenderer(getClass(), gtsm.client.RangeFrameRenderer.INSTANCE);
+    }
+
+    /** GT6 图集缝合回调（自建方块注册表时会被 MultiTileEntityBlockInternal 调用） */
+    @Override
+    @cpw.mods.fml.relauncher.SideOnly(cpw.mods.fml.relauncher.Side.CLIENT)
+    public void registerIcons(net.minecraft.client.renderer.texture.IIconRegister aIconRegister) {
+        ICON_STORAGE_MANAGER.registerIcons(aIconRegister);
     }
 
     /** 立即把本管理器的范围数据同步给 64 格内的玩家（GUI/画框数据源） */

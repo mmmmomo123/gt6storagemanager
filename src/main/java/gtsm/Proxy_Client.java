@@ -1,13 +1,16 @@
 package gtsm;
 
 import gregapi.api.Abstract_Proxy;
+import gtsm.client.IconStitchHandler;
+import net.minecraftforge.common.MinecraftForge;
 
 /**
- * 客户端代理。贴图注册由 GT6 的 GT_API.sBlockIconload 机制处理
- * （见 TileEntityStorageManager.ICON_STORAGE_MANAGER）；
- * 大世界范围画框走 TESR（TileEntitySpecialRenderer，见 TileEntityStorageManager.
- * onRegistrationFirstClient → gtsm.client.RangeFrameRenderer）。
+ * 客户端代理：
+ * - IconStitchHandler：每次图集重建时重新注册方块图标（防“有碰撞不渲染”）
+ * - 大世界范围画框走 TESR（见 TileEntityStorageManager.onRegistrationFirstClient → gtsm.client.RangeFrameRenderer）
  */
 public final class Proxy_Client extends Abstract_Proxy {
-    // 客户端专属逻辑（当前无）
+    public Proxy_Client() {
+        MinecraftForge.EVENT_BUS.register(new IconStitchHandler());
+    }
 }
