@@ -24,7 +24,9 @@ public final class IconStitchHandler {
         if (aEvent.map.getTextureType() == 0) {
             try {
                 gtsm.tile.TileEntityStorageManager.ICON_STORAGE_MANAGER.registerIcons(aEvent.map);
+                System.out.println("[GTSM-DIAG] Forge-path stitch type=0 icon=" + (gtsm.tile.TileEntityStorageManager.ICON_STORAGE_MANAGER.getIcon(0) == null ? "NULL" : "ok"));
             } catch (Throwable t) {
+                System.out.println("[GTSM-DIAG] Forge-path stitch FAILED: " + t);
                 t.printStackTrace();
             }
         }

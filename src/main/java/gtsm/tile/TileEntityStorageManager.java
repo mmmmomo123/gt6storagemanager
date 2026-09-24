@@ -128,6 +128,7 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
         mRangeEnabled = !aNBT.hasKey("gtsm.rangeEnabled") || aNBT.getBoolean("gtsm.rangeEnabled");
         mShowFrame = !aNBT.hasKey("gtsm.showFrame") || aNBT.getBoolean("gtsm.showFrame");
         mNeedsRescan = T;
+        System.out.println("[GTSM-DIAG] TE loaded at (" + xCoord + "," + yCoord + "," + zCoord + ") remote=" + (worldObj != null && worldObj.isRemote) + " nbtId=" + aNBT.getString("id"));
     }
 
     @Override
@@ -201,11 +202,12 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
         cpw.mods.fml.client.registry.ClientRegistry.bindTileEntitySpecialRenderer(getClass(), gtsm.client.RangeFrameRenderer.INSTANCE);
     }
 
-    /** GT6 图集缝合回调（自建方块注册表时会被 MultiTileEntityBlockInternal 调用） */
+    /** GT6 图集缝合回调（由 MultiTileEntityBlockInternal.registerIcons 在每次缝合时调用） */
     @Override
     @cpw.mods.fml.relauncher.SideOnly(cpw.mods.fml.relauncher.Side.CLIENT)
     public void registerIcons(net.minecraft.client.renderer.texture.IIconRegister aIconRegister) {
         ICON_STORAGE_MANAGER.registerIcons(aIconRegister);
+        System.out.println("[GTSM-DIAG] GT6-path registerIcons called register=" + (aIconRegister == null ? "null" : aIconRegister.getClass().getName()) + " icon=" + (ICON_STORAGE_MANAGER.getIcon(0) == null ? "NULL" : "ok"));
     }
 
     /** 立即把本管理器的范围数据同步给 64 格内的玩家（GUI/画框数据源） */
@@ -300,13 +302,14 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
         return aStack;
     }
 
-    /** 路由槽准入判断：范围内是否有桶能接收该物品（同品种桶 或 允许时空桶） */
+    /** 路由槽准入判断：范围内是否有桶能接收该物品（同品种桶、可打包小单位、或允许时空桶） */
     private boolean canRouteInsert(ItemStack aStack) {
         ensureValid();
         for (MultiTileEntityMassStorage tBox : mBoxes) {
             if (isTaped(tBox)) continue;
             if (!tBox.slotHas(1)) { if (mFillEmptyBoxes) return T; continue; }
-            if (ST.equal(tBox.slot(1), aStack)) return T;
+            // allowInsertion 覆盖：同品种 + 可打包小单位(小撮/粒 → 桶内品种)
+            if (tBox.allowInsertion(aStack)) return T;
         }
         return F;
     }
@@ -440,9 +443,10 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
         if (ST.invalid(aStack)) return F;
         if (aSlot == SLOT_ROUTER) return canRouteInsert(aStack); // 路由槽：仅当范围内确实有桶能收时才准入
         MultiTileEntityMassStorage tBox = box(aSlot);
-        if (tBox == null || isTaped(tBox)) return F;
+        if (tBox == null) return F;
         if (!tBox.slotHas(1)) return mFillEmptyBoxes; // 空桶按配置决定是否接受新品种
-        return ST.equal(aStack, tBox.slot(1)); // 已有品种的桶只接受同品种
+        // GT6 自己的准入判断：同品种 YES；不同品种但可打包(小撮→粉碎矿石、粒→锭等) YES；胶带锁定 NO
+        return tBox.allowInsertion(aStack);
     }
 
     // --------------------------------------------------------------
@@ -576,7 +580,18 @@ public class TileEntityStorageManager extends TileEntityBase04MultiTileEntities
 
     @Override
     public void onTick(long aTimer, boolean aIsServerSide) {
-        if (!aIsServerSide) return;
+        if (!aIsServerSide) {
+            // 客户端诊断：方块是否在、是什么、图标是否有效
+            if (aTimer % 100 == 0 && worldObj != null) {
+                Block tBlock = worldObj.getBlock(xCoord, yCoord, zCoord);
+                System.out.println("[GTSM-DIAG] CLIENT TE@(" + xCoord + "," + yCoord + "," + zCoord + ") blockId=" + net.minecraft.block.Block.getIdFromBlock(tBlock)
+                        + " block=" + (tBlock == null ? "null" : tBlock.getClass().getSimpleName())
+                        + " blockClass=" + (tBlock == null ? "null" : tBlock.getClass().getName())
+                        + " icon=" + (ICON_STORAGE_MANAGER.getIcon(0) == null ? "NULL" : "ok")
+                        + " texFile=" + (ICON_STORAGE_MANAGER.getTextureFile() == null ? "null" : ICON_STORAGE_MANAGER.getTextureFile().toString()));
+            }
+            return;
+        }
         if (mNeedsRescan || aTimer % 256 == 0) {
             rescan();
             mNeedsRescan = F;
