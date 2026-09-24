@@ -1,0 +1,17 @@
+# Gradle / ForgeGradle
+.gradle/
+build/
+run/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+*.iml
+.idea/
+.settings/
+.classpath
+.project
+bin/
+
+# OS
+Thumbs.db
+Desktop.ini

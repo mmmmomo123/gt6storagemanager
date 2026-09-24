@@ -1,0 +1,16 @@
+[
+  {
+    "modid": "gtsm",
+    "name": "GT6 Storage Manager",
+    "description": "A Drawer Manager style Block for GregTech 6. It scans GT6 Mass Storage Boxes in range and exposes them as one unified IInventory for Pipes, AE2, Conveyors and friends. Rightclick to insert held Items.",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "",
+    "logoFile": "",
+    "screenshots": [],
+    "authorList": ["YourName"],
+    "credits": "Gregorius Techneticies for GregTech 6 and its Addon API.",
+    "parent": "",
+    "dependencies": ["gregtech"]
+  }
+]

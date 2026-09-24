@@ -1,0 +1,26 @@
+# 储物桶管理器（GT6 Storage Manager）
+# 方块名：注册表名 gtsm.multitileentity + "." + MTE_ID(1)
+item.gtsm.multitileentity.1.name=储物桶管理器
+gtsm.multitileentity.1=储物桶管理器
+# 创造模式物品栏（MTE_ID=0 的分类名）
+gtsm.multitileentity.0=储物桶管理器
+# 箱体内部名 / 聊天标题
+gtsm.storage.manager=储物桶管理器
+
+# 物品提示
+gtsm.tooltip.1=管理范围内的 GT6 储物桶，对外提供一个统一的自动化接口
+gtsm.tooltip.2=右键放入手中物品，潜行右键放入背包内全部同品种物品
+gtsm.tooltip.3=螺丝刀：切换是否填充空桶 | 软锤：重新扫描 | 放大镜：查看详情
+
+# 工具交互聊天信息
+gtsm.chat.fill.on=将允许把新品种物品放入空储物桶
+gtsm.chat.fill.off=将不会占用空储物桶
+gtsm.chat.rescan=已重新扫描区域，找到
+gtsm.chat.boxes=个储物桶
+gtsm.chat.scope=储物桶
+gtsm.chat.used=已占用
+gtsm.chat.empty=空闲
+gtsm.chat.locked=已锁定
+gtsm.chat.range=扫描半径
+gtsm.chat.oredict=矿物词典统一
+gtsm.chat.fill=填充空桶

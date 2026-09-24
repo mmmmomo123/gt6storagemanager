@@ -1,0 +1,59 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            name = "forge"
+            url = "http://files.minecraftforge.net/maven"
+        }
+        maven {
+            name = "sonatype"
+            url = "https://oss.sonatype.org/content/repositories/snapshots/"
+        }
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:1.2-SNAPSHOT'
+    }
+}
+
+apply plugin: 'forge'
+
+version = "1.0.0"
+group = "gtsm"
+archivesBaseName = "gtsm"
+
+sourceCompatibility = targetCompatibility = 1.7
+
+minecraft {
+    version = "1.7.10-10.13.4.1614-1.7.10"
+    runDir = "run"
+}
+
+// GT6 作为编译期依赖（provided：不打包进 jar，运行时由 GT6 提供）。
+// 编译期所有 Minecraft 调用都应先强转成 IInventory 等 MCP 命名的类型，
+// GT 自家方法（insertItems 等未被混淆的方法）可直接调用。
+configurations { provided }
+
+dependencies {
+    provided files("libs/gregtech_1.7.10-6.17.06.jar")
+}
+
+// 把 GT6 追加到 classpath 末尾，确保 ForgeGradle 提供的（MCP 名的）Minecraft 优先。
+sourceSets.main.compileClasspath += configurations.provided
+sourceSets.main.runtimeClasspath += configurations.provided
+
+processResources {
+    // 版本号变化时重新执行该任务
+    inputs.property "version", project.version
+    inputs.property "mcversion", project.minecraft.version
+
+    // 替换 mcmod.info 中的占位符
+    from(sourceSets.main.resources.srcDirs) {
+        include 'mcmod.info'
+        expand 'version': project.version, 'mcversion': project.minecraft.version
+    }
+
+    // 其余资源原样复制
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'mcmod.info'
+    }
+}

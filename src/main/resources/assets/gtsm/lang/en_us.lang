@@ -1,0 +1,21 @@
+# GT6 Storage Manager
+item.gtsm.multitileentity.1.name=Storage Manager
+gtsm.multitileentity.1=Storage Manager
+gtsm.multitileentity.0=Storage Manager
+gtsm.storage.manager=Storage Manager
+
+gtsm.tooltip.1=Manages GT6 Storage Boxes in range and exposes one unified Automation Interface
+gtsm.tooltip.2=Rightclick to insert held Itemstack, Sneak-Rightclick to insert all matching Stacks
+gtsm.tooltip.3=Screwdriver: toggle filling empty Boxes | Soft Hammer: rescan | Magnifying Glass: details
+
+gtsm.chat.fill.on=Will fill empty Storage Boxes with new Item Types
+gtsm.chat.fill.off=Won't fill empty Storage Boxes with new Item Types
+gtsm.chat.rescan=Rescanned Area, found
+gtsm.chat.boxes=Storage Boxes
+gtsm.chat.scope=Storage Boxes
+gtsm.chat.used=in use
+gtsm.chat.empty=empty
+gtsm.chat.locked=locked
+gtsm.chat.range=Range
+gtsm.chat.oredict=OreDict Unify
+gtsm.chat.fill=Fill Empty
